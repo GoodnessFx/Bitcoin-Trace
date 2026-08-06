@@ -368,7 +368,7 @@ export default function AdminPanel({ onBack }: Props) {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[#e2e6ed] bg-[#f8f9fb]">
-                          {['Invoice', 'Client', 'Amount', 'Currency', 'Date', 'Method', 'Status', 'Tx Hash', 'Invoice'].map(h => (
+                          {['Invoice', 'Client', 'Amount', 'Currency', 'Date', 'Method', 'Status', 'Tx Hash', 'Actions'].map(h => (
                             <th key={h} className="px-5 py-3 text-left font-mono text-[10px] text-[#6b7280] uppercase tracking-widest whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
