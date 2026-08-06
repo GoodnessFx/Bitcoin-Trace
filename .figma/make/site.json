@@ -1,0 +1,11 @@
+{
+  "title": "BitcoinTrace — Bitcoin & Crypto Recovery",
+  "description": "BitcoinTrace helps recover lost or stolen Bitcoin and cryptocurrency. Blockchain tracing, wallet analysis, case management, and secure client communication.",
+  "robots": {
+    "index": true
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
