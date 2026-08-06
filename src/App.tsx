@@ -9,10 +9,16 @@ export type Page = 'landing' | 'dashboard' | 'admin-login' | 'admin'
 export default function App() {
   const [page, setPage] = useState<Page>('landing')
   const [adminAuthed, setAdminAuthed] = useState(false)
+  const [scanAddress, setScanAddress] = useState('')
 
   const navigate = (p: Page) => {
     if (p === 'admin' && !adminAuthed) { setPage('admin-login'); return }
     setPage(p)
+  }
+
+  const startScan = (addr: string) => {
+    setScanAddress(addr)
+    setPage('dashboard')
   }
 
   if (page === 'admin-login') return (
@@ -22,7 +28,7 @@ export default function App() {
     <AdminPanel onBack={() => setPage('landing')} />
   )
   if (page === 'dashboard') return (
-    <Dashboard onBack={() => setPage('landing')} navigate={navigate} />
+    <Dashboard onBack={() => setPage('landing')} navigate={navigate} initialAddress={scanAddress} />
   )
-  return <Landing navigate={navigate} />
+  return <Landing navigate={navigate} onScan={startScan} />
 }

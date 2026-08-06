@@ -229,9 +229,9 @@ function NetworkGraph() {
   )
 }
 
-interface Props { navigate: (p: Page) => void }
+interface Props { navigate: (p: Page) => void; onScan: (addr: string) => void }
 
-export default function Landing({ navigate }: Props) {
+export default function Landing({ navigate, onScan }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [openRecoveryInfo, setOpenRecoveryInfo] = useState<number | null>(0)
@@ -463,7 +463,7 @@ export default function Landing({ navigate }: Props) {
                 <div>
                   <label className="font-body text-[11px] text-[#5a6174] block mb-1.5">Wallet Address / TXID</label>
                   <input value={recoverAddr} onChange={e => setRecoverAddr(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && navigate('dashboard')}
+                    onKeyDown={e => e.key === 'Enter' && onScan(recoverAddr)}
                     className="w-full border border-[#e4e8f0] rounded px-3 py-2.5 font-mono text-[12px] focus:outline-none focus:border-[#f7931a] transition-colors"
                     placeholder="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa" />
                 </div>
@@ -490,7 +490,7 @@ export default function Landing({ navigate }: Props) {
                   <p className="font-body text-[12px] text-[#3d4452]">Attach evidence (optional)</p>
                   <p className="font-mono text-[9px] text-[#8b92a5] mt-0.5">PDF · JPG · PNG — max 20 MB</p>
                 </div>
-                <button onClick={() => navigate('dashboard')}
+                <button onClick={() => onScan(recoverAddr)}
                   className="w-full inline-flex items-center justify-center gap-2 bg-[#f7931a] text-white font-heading font-600 text-[13px] px-5 py-3 rounded hover:bg-[#e07e10] transition-all shadow-lg shadow-orange-500/20">
                   Scan & Trace Funds <ArrowRight size={15} />
                 </button>

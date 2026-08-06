@@ -83,12 +83,11 @@ export default function AdminLogin({ onAuth, onBack }: Props) {
               <form onSubmit={handleMfa} className="space-y-4">
                 <input value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   className="w-full border border-[#e2e6ed] rounded-xl px-3.5 py-3 text-center font-mono text-xl tracking-[0.4em] focus:outline-none focus:border-[#0057ff]"
-                  placeholder="000000" maxLength={6} />
+                  placeholder="••••••" maxLength={6} />
                 {error && <p className="text-xs text-[#dc2626] text-center">{error}</p>}
                 <button type="submit" className="w-full bg-[#0057ff] text-white font-medium py-2.5 rounded-xl hover:bg-[#0042cc] transition-colors text-sm">
                   Verify & Enter
                 </button>
-                <p className="text-center text-xs text-[#6b7280]">Demo: enter any 6-digit code</p>
               </form>
             </>
           )}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Page } from '../App'
 import {
   Shield, Search, Upload, MessageSquare, FileText, Clock,
@@ -67,9 +67,9 @@ interface ScanResult {
   transactions: { hash: string; date: string; amount: string; direction: 'in' | 'out'; counterparty: string }[]
 }
 
-interface Props { onBack: () => void; navigate: (p: Page) => void }
+interface Props { onBack: () => void; navigate: (p: Page) => void; initialAddress?: string }
 
-export default function Dashboard({ onBack }: Props) {
+export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
   const [tab, setTab] = useState<'cases' | 'submit' | 'scan' | 'messages' | 'evidence' | 'invoices' | 'reports' | 'notifications'>('cases')
   const [scanAddr, setScanAddr] = useState('')
   const [scanning, setScanning] = useState(false)
@@ -80,6 +80,17 @@ export default function Dashboard({ onBack }: Props) {
   const [copied, setCopied] = useState(false)
   const [paid, setPaid] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', incident: '', wallets: '', amount: '', chain: 'Bitcoin', date: '' })
+  const initialRan = useRef(false)
+
+  useEffect(() => {
+    if (initialAddress && !initialRan.current) {
+      initialRan.current = true
+      setScanAddr(initialAddress)
+      setTab('scan')
+      handleScan(initialAddress)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAddress])
 
   const feeBtc = (RECOVERY_FEE_USD / BTC_PRICE).toFixed(4)
 
@@ -89,8 +100,9 @@ export default function Dashboard({ onBack }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleScan = () => {
-    if (!scanAddr.trim()) return
+  const handleScan = (addr?: string) => {
+    const target = addr ?? scanAddr
+    if (!target.trim()) return
     setScanning(true)
     setScanResult(null)
     setScanProgress(0)
@@ -100,9 +112,9 @@ export default function Dashboard({ onBack }: Props) {
         if (next >= 100) {
           clearInterval(interval)
           setScanning(false)
-          const isEth = scanAddr.startsWith('0x')
+          const isEth = target.startsWith('0x')
           setScanResult({
-            address: scanAddr,
+            address: target,
             chain: isEth ? 'Ethereum' : 'Bitcoin',
             balance: isEth ? '0.0041 ETH' : '0.00 BTC',
             totalSent: isEth ? '14.83 ETH ($52,140)' : '0.84 BTC ($52,140)',
@@ -354,7 +366,7 @@ export default function Dashboard({ onBack }: Props) {
                       onKeyDown={e => e.key === 'Enter' && handleScan()}
                       className="flex-1 border border-[#e2e6ed] rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-[#f7931a] transition-colors"
                       placeholder="Enter BTC or ETH address to scan (e.g. 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa)" />
-                    <button onClick={handleScan} disabled={scanning}
+                    <button onClick={() => handleScan()} disabled={scanning}
                       className="bg-[#f7931a] text-white px-5 py-3 rounded-xl font-medium text-sm hover:bg-[#e07e10] disabled:opacity-50 transition-all flex items-center gap-2">
                       {scanning ? <Loader size={15} className="animate-spin" /> : <Search size={15} />}
                       Scan
