@@ -44,17 +44,19 @@ export default function AuthPage({ onAuth, onBack }: Props) {
   const [remember, setRemember] = useState(true)
   const [googleReady, setGoogleReady] = useState(false)
   const googleBtnRef = useRef<HTMLDivElement>(null)
+  const googleRendered = useRef(false)
 
   useEffect(() => {
     let cancelled = false
-    if (!hasGoogleClientId()) return
+    if (!hasGoogleClientId() || googleRendered.current) return
     initGoogleAuth(profile => {
       const { user } = signInWithGoogle(profile.name, profile.email, profile.picture)
       onAuth(user)
     }).then(ok => {
       if (cancelled) return
       setGoogleReady(ok)
-      if (ok && googleBtnRef.current) {
+      if (ok && googleBtnRef.current && !googleRendered.current) {
+        googleRendered.current = true
         renderGoogleButton(googleBtnRef.current, profile => {
           const { user } = signInWithGoogle(profile.name, profile.email, profile.picture)
           onAuth(user)
