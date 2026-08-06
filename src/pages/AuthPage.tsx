@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Shield, Lock, Eye, EyeOff, ArrowLeft, Mail,
   X, Check, LogIn, UserPlus, Loader
@@ -16,6 +16,7 @@ function GoogleG({ size = 18 }: { size?: number }) {
 }
 import type { AuthUser } from '../lib/auth'
 import { signUp, signIn, signInWithGoogle } from '../lib/auth'
+import { initGoogleAuth, renderGoogleButton, promptGoogleOneTap, hasGoogleClientId } from '../lib/google'
 
 interface Props {
   onAuth: (user: AuthUser) => void
@@ -41,6 +42,29 @@ export default function AuthPage({ onAuth, onBack }: Props) {
   const [googleEmail, setGoogleEmail] = useState('')
   const [googleStep, setGoogleStep] = useState<'chooser' | 'custom'>('chooser')
   const [remember, setRemember] = useState(true)
+  const [googleReady, setGoogleReady] = useState(false)
+  const googleBtnRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!hasGoogleClientId()) return
+    initGoogleAuth(profile => {
+      const { user } = signInWithGoogle(profile.name, profile.email, profile.picture)
+      onAuth(user)
+    }).then(ok => {
+      if (cancelled) return
+      setGoogleReady(ok)
+      if (ok && googleBtnRef.current) {
+        renderGoogleButton(googleBtnRef.current, profile => {
+          const { user } = signInWithGoogle(profile.name, profile.email, profile.picture)
+          onAuth(user)
+        })
+        promptGoogleOneTap()
+      }
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,10 +122,25 @@ export default function AuthPage({ onAuth, onBack }: Props) {
           </p>
 
           {/* Google button */}
-          <button onClick={() => { setError(''); setGoogleStep('chooser'); setGoogleOpen(true) }}
-            className="w-full flex items-center justify-center gap-3 border border-[#e2e6ed] rounded-xl py-2.5 hover:bg-[#f8f9fb] transition-colors text-sm font-medium">
-            <GoogleG /> Continue with Google
-          </button>
+          {hasGoogleClientId() ? (
+            <div>
+              <div ref={googleBtnRef} className="w-full" />
+              {!googleReady && (
+                <div className="w-full border border-[#e2e6ed] rounded-xl py-2.5 text-center text-sm text-[#6b7280] animate-pulse">
+                  Loading Google sign-in…
+                </div>
+              )}
+              <div className="mt-2 flex items-center gap-2">
+                <GoogleG size={14} />
+                <span className="text-[10px] text-[#6b7280]">Uses the Google account already signed in on this browser</span>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => { setError(''); setGoogleStep('chooser'); setGoogleOpen(true) }}
+              className="w-full flex items-center justify-center gap-3 border border-[#e2e6ed] rounded-xl py-2.5 hover:bg-[#f8f9fb] transition-colors text-sm font-medium">
+              <GoogleG /> Continue with Google
+            </button>
+          )}
 
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-[#e2e6ed]" />

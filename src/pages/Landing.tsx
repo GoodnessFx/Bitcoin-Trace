@@ -304,7 +304,9 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
             {user ? (
               <>
                 <span className="flex items-center gap-2 text-[13px] text-[#5a6174]">
-                  <span className="w-7 h-7 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-[10px]">{user.initials}</span>
+                  {user.picture
+                    ? <img src={user.picture} alt="" className="w-7 h-7 rounded-full object-cover" />
+                    : <span className="w-7 h-7 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-[10px]">{user.initials}</span>}
                   <span className="max-w-[120px] truncate">{user.name.split(' ')[0]}</span>
                 </span>
                 <button onClick={() => navigate('dashboard')}

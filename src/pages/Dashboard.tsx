@@ -202,7 +202,9 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
             </span>
             {user ? (
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs">{user.initials}</div>
+                {user.picture
+                  ? <img src={user.picture} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  : <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs">{user.initials}</div>}
                 <div className="hidden sm:block leading-tight">
                   <p className="text-xs font-medium">{user.name}</p>
                   <p className="font-mono text-[10px] text-[#6b7280]">{user.provider === 'google' ? 'Google account' : user.email}</p>

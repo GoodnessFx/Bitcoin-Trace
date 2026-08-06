@@ -4,6 +4,7 @@ export interface AuthUser {
   provider: 'email' | 'google'
   initials: string
   joined: string
+  picture?: string
 }
 
 interface StoredUser extends AuthUser {
@@ -72,7 +73,7 @@ export function signIn(email: string, password: string): { user: AuthUser } | { 
   return { user: toPublic(found) }
 }
 
-export function signInWithGoogle(name: string, email: string): { user: AuthUser } {
+export function signInWithGoogle(name: string, email: string, picture?: string): { user: AuthUser } {
   const users = loadUsers()
   const normalized = email.trim().toLowerCase()
   let found = users.find(u => u.email === normalized)
@@ -83,11 +84,13 @@ export function signInWithGoogle(name: string, email: string): { user: AuthUser 
       provider: 'google',
       initials: initialsOf(name.trim() || 'Google User'),
       joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      picture,
     }
     users.push(found)
     saveUsers(users)
   } else {
     found.provider = 'google'
+    if (picture) found.picture = picture
     saveUsers(users)
   }
   localStorage.setItem(SESSION_KEY, JSON.stringify(toPublic(found)))
