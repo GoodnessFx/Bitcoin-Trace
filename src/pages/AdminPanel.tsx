@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  Shield, ArrowLeft, Users, FileText, DollarSign, Activity,
+  ArrowLeft, Users, FileText, DollarSign, Activity,
   AlertTriangle, Check, Clock, Search, Download, Eye, Lock,
   TrendingUp, BarChart2, Bell, Settings, LogOut, Network, Globe,
   KeyRound, Filter, MessageSquare, FileUp, PieChart, Timer,
@@ -116,9 +116,7 @@ export default function AdminPanel({ onBack }: Props) {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-[#f7931a] rounded-md flex items-center justify-center">
-                <Shield size={12} className="text-white" />
-              </div>
+              <img src="/logo.jpg" alt="BitcoinTrace" className="h-6 w-auto object-contain" />
               <span className="font-medium text-sm text-white">BitcoinTrace Admin</span>
             </div>
             <span className="font-mono text-[10px] bg-[#f7931a]/20 text-[#f7931a] px-2 py-0.5 rounded-full uppercase tracking-widest">Secure Portal</span>

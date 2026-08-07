@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Shield, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 
 interface Props { onAuth: () => void; onBack: () => void }
 
@@ -39,9 +39,7 @@ export default function AdminLogin({ onAuth, onBack }: Props) {
 
         <div className="bg-white border border-[#e2e6ed] rounded-2xl p-8">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 bg-[#0057ff] rounded-xl flex items-center justify-center">
-              <Shield size={17} className="text-white" />
-            </div>
+            <img src="/logo.jpg" alt="BitcoinTrace" className="h-9 w-auto object-contain" />
             <div>
               <p className="font-semibold text-sm">BitcoinTrace</p>
               <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Admin Portal</p>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import type { Page } from '../App'
 import type { AuthUser } from '../lib/auth'
 import {
-  Shield, Search, Upload, MessageSquare, FileText, Clock,
+  Search, Upload, MessageSquare, FileText, Clock,
   ArrowLeft, Activity, AlertTriangle, Check, ChevronRight,
   Lock, Plus, Download, X, Loader, Bell, Receipt, Copy,
   FolderOpen, User, FileUp, Info, Bitcoin, LogOut, Wallet
@@ -190,9 +190,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
             </button>
             <span className="text-[#e2e6ed]">/</span>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-[#f7931a] rounded-md flex items-center justify-center">
-                <Shield size={12} className="text-white" />
-              </div>
+              <img src="/logo.jpg" alt="BitcoinTrace" className="h-6 w-auto object-contain" />
               <span className="font-medium text-sm">BitcoinTrace Client Portal</span>
             </div>
           </div>

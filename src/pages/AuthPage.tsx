@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  Shield, Lock, Eye, EyeOff, ArrowLeft, Mail,
+  Lock, Eye, EyeOff, ArrowLeft, Mail,
   X, Check, LogIn, UserPlus, Loader
 } from 'lucide-react'
 
@@ -107,9 +107,7 @@ export default function AuthPage({ onAuth, onBack }: Props) {
 
         <div className="bg-white border border-[#e2e6ed] rounded-2xl p-8">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 bg-[#0a0c10] rounded-xl flex items-center justify-center">
-              <Shield size={17} className="text-[#f7931a]" />
-            </div>
+            <img src="/logo.jpg" alt="BitcoinTrace" className="h-9 w-auto object-contain" />
             <div>
               <p className="font-semibold text-sm">BitcoinTrace</p>
               <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Secure Client Portal</p>
