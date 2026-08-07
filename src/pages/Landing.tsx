@@ -57,15 +57,15 @@ const TOOLS = [
 
 const TESTIMONIALS = [
   { name: 'James T.', role: 'Private Investor', country: 'United Kingdom', type: 'Exchange Hack', quote: 'The UTXO trace report was accepted by the exchange legal team within 48 hours. They located where the funds had moved and the subpoena process began immediately.' },
-  { name: 'Yuki M.', role: 'Corporate Counsel', country: 'Japan', type: 'Business Fraud', quote: 'Three wallets, nine hops, two exchanges across two jurisdictions. BitcoinTrace produced a single coherent evidence document our prosecutors could follow.' },
+  { name: 'Yuki M.', role: 'Corporate Counsel', country: 'Japan', type: 'Business Fraud', quote: 'Three wallets, nine hops, two exchanges across two jurisdictions. CryptoWallet Tracker produced a single coherent evidence document our prosecutors could follow.' },
   { name: 'Carlos R.', role: 'Fund Manager', country: 'Brazil', type: 'Ransomware', quote: 'We needed to prove the ransomware group had received our payment and then moved funds. The cluster analysis confirmed the connection definitively.' },
   { name: 'Amina O.', role: 'Attorney', country: 'UAE', type: 'Theft Investigation', quote: 'The report structure was exactly what our judge required. No unnecessary complexity — just a clear forensic trail from the victim wallet to the identified exchange account.' },
   { name: 'Sophie L.', role: 'Private Client', country: 'France', type: 'Phishing Attack', quote: 'I lost 1.4 BTC to a phishing kit. The investigation identified the exchange cluster and we received a voluntary freeze within ten days of submitting evidence.' },
-  { name: 'David K.', role: 'Exchange Compliance', country: 'Singapore', type: 'AML Screening', quote: 'We use BitcoinTrace for deposit screening on high-value withdrawals. The risk scoring is accurate and the team responds quickly to edge-case queries.' },
-  { name: 'Michael P.', role: 'Crypto Trader', country: 'United States', type: 'Recovery Fee Payment', quote: 'My investigation exceeded 30 minutes and automatically triggered a recovery fee. The 30% fee ($3,000) was clearly displayed and I could instantly see the company wallet for payment.' },
-  { name: 'Elena R.', role: 'Venture Capital', country: 'Switzerland', type: 'Quick Resolution', quote: 'The fee flow was transparent - my case showed exactly how much I lost ($54,800) and what I needed to pay ($16,440) to recover. The company wallet integration made payment seamless.' },
-  { name: 'Ravi K.', role: 'Blockchain Developer', country: 'India', type: 'Technical Case', quote: 'I lost 1.84 BTC in a hack. The system calculated the recovery fee of $11,136 automatically when my investigation hit the 30-minute mark, showing the exact timeline and ETA.' },
-  { name: 'Sofia M.', role: 'NGO Director', country: 'Kenya', type: 'International Recovery', quote: 'My case involved funds across multiple jurisdictions. The system clearly showed when I exceeded the 30-minute threshold and displayed the exact payment required to proceed with the investigation.' },
+  { name: 'David K.', role: 'Exchange Compliance', country: 'Singapore', type: 'AML Screening', quote: 'We use CryptoWallet Tracker for deposit screening on high-value withdrawals. The risk scoring is accurate and the team responds quickly to edge-case queries.' },
+  { name: 'Michael P.', role: 'Crypto Trader', country: 'United States', type: 'Recovery Fee Payment', quote: 'I entered my wallet address, the tracker scanned it for a few minutes, then displayed the company wallet for the recovery fee. Payment confirmation was instant and my funds were released.' },
+  { name: 'Elena R.', role: 'Venture Capital', country: 'Switzerland', type: 'Quick Resolution', quote: 'The flow was simple - I pasted my address, watched the scan complete, paid the fee to the displayed company wallet, and got a clear received / processing / done status for my funds.' },
+  { name: 'Ravi K.', role: 'Blockchain Developer', country: 'India', type: 'Technical Case', quote: 'I lost 1.84 BTC in a hack. The tracker scanned my wallet, showed the recovery fee to the company wallet, and walked me through received to done - check your wallets.' },
+  { name: 'Sofia M.', role: 'NGO Director', country: 'Kenya', type: 'International Recovery', quote: 'My case involved funds across multiple jurisdictions. I input the wallet address, waited for the scan, and paid the recovery fee directly to the displayed company wallet address.' },
 ]
 
 const PRICING = [
@@ -282,9 +282,9 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
       <nav className="sticky top-0 z-50 bg-white/96 backdrop-blur-sm border-b border-[#e4e8f0]">
         <div className="max-w-7xl mx-auto px-6 h-[60px] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="BitcoinTrace" className="h-8 w-auto object-contain" />
+            <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-8 w-auto object-contain" />
             <div>
-              <span className="font-heading font-700 text-[15px] tracking-tight">BitcoinTrace</span>
+              <span className="font-heading font-700 text-[15px] tracking-tight">CryptoWallet Tracker</span>
               <span className="font-mono text-[9px] text-[#f7931a] ml-2 uppercase tracking-widest">Crypto Recovery</span>
             </div>
           </div>
@@ -379,13 +379,13 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
               </div>
 
               <h1 className="font-heading text-[52px] lg:text-[64px] leading-[1.04] font-700 mb-6 animate-fade-up-d1">
-                Trace Stolen<br />
-                <span className="text-[#f7931a]">Bitcoin.</span><br />
-                <span className="text-[#0057ff]">Build Evidence.</span>
+                CryptoWallet<br />
+                <span className="text-[#f7931a]">Tracker.</span><br />
+                <span className="text-[#0057ff]">Track & Recover.</span>
               </h1>
 
               <p className="font-body text-[16px] text-[#5a6174] leading-relaxed mb-8 max-w-[480px] animate-fade-up-d2">
-                UTXO-level tracing of stolen BTC across every hop — exchanges identified, mixer patterns exposed, forensic reports formatted for law enforcement and civil proceedings.
+                Enter your wallet address. We scan the chain, locate your recoverable funds, and guide you through the release — simply and securely.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 animate-fade-up-d3">
@@ -830,8 +830,8 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
       <footer className="border-t border-[#e4e8f0] bg-white">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-2">
-            <img src="/logo.jpg" alt="BitcoinTrace" className="h-7 w-auto object-contain" />
-            <span className="font-heading font-600 text-sm">BitcoinTrace</span>
+            <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-7 w-auto object-contain" />
+            <span className="font-heading font-600 text-sm">CryptoWallet Tracker</span>
             <span className="font-mono text-[9px] text-[#8b92a5] uppercase tracking-widest ml-1">Crypto Recovery</span>
           </div>
           <p className="font-body text-[11px] text-[#8b92a5] text-center max-w-sm">

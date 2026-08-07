@@ -116,8 +116,8 @@ export default function AdminPanel({ onBack }: Props) {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <img src="/logo.jpg" alt="BitcoinTrace" className="h-6 w-auto object-contain" />
-              <span className="font-medium text-sm text-white">BitcoinTrace Admin</span>
+              <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-6 w-auto object-contain" />
+              <span className="font-medium text-sm text-white">CryptoWallet Tracker Admin</span>
             </div>
             <span className="font-mono text-[10px] bg-[#f7931a]/20 text-[#f7931a] px-2 py-0.5 rounded-full uppercase tracking-widest">Secure Portal</span>
             <span className="font-mono text-[10px] bg-[#0057ff]/20 text-[#0057ff] px-2 py-0.5 rounded-full uppercase tracking-widest">Super Admin</span>

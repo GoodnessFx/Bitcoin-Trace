@@ -107,9 +107,9 @@ export default function AuthPage({ onAuth, onBack }: Props) {
 
         <div className="bg-white border border-[#e2e6ed] rounded-2xl p-8">
           <div className="flex items-center gap-2 mb-6">
-            <img src="/logo.jpg" alt="BitcoinTrace" className="h-9 w-auto object-contain" />
+            <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-9 w-auto object-contain" />
             <div>
-              <p className="font-semibold text-sm">BitcoinTrace</p>
+              <p className="font-semibold text-sm">CryptoWallet Tracker</p>
               <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Secure Client Portal</p>
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function AuthPage({ onAuth, onBack }: Props) {
             {googleStep === 'chooser' ? (
               <>
                 <h2 className="px-6 text-lg font-medium">Choose an account</h2>
-                <p className="px-6 text-sm text-[#6b7280] mb-4">to continue to BitcoinTrace</p>
+                <p className="px-6 text-sm text-[#6b7280] mb-4">to continue to CryptoWallet Tracker</p>
                 <div className="border-t border-[#e2e6ed]">
                   {GOOGLE_ACCOUNTS.map(a => (
                     <button key={a.email} onClick={() => pickGoogle(a.name, a.email)}
