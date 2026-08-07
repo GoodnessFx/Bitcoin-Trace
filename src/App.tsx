@@ -23,9 +23,8 @@ export default function App() {
   }
 
   const startScan = (addr: string) => {
-    if (!user) { setPage('auth'); return }
     setScanAddress(addr)
-    setPage('dashboard')
+    navigate('dashboard')
   }
 
   const handleSignOut = () => {
