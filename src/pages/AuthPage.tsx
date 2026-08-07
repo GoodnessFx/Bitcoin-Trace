@@ -3,6 +3,7 @@ import {
   Lock, Eye, EyeOff, ArrowLeft, Mail,
   X, Check, LogIn, UserPlus, Loader
 } from 'lucide-react'
+import { LOGO_URL } from '../lib/branding'
 
 function GoogleG({ size = 18 }: { size?: number }) {
   return (
@@ -107,7 +108,7 @@ export default function AuthPage({ onAuth, onBack }: Props) {
 
         <div className="bg-white border border-[#e2e6ed] rounded-2xl p-8">
           <div className="flex items-center gap-2 mb-6">
-            <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-9 w-auto object-contain" />
+            <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-9 w-auto object-contain" />
             <div>
               <p className="font-semibold text-sm">CryptoWallet Tracker</p>
               <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Secure Client Portal</p>

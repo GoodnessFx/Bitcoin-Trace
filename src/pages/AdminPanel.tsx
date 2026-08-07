@@ -4,8 +4,10 @@ import {
   AlertTriangle, Check, Clock, Search, Download, Eye, Lock,
   TrendingUp, BarChart2, Bell, Settings, LogOut, Network, Globe,
   KeyRound, Filter, MessageSquare, FileUp, PieChart, Timer,
-  Award, Fingerprint, Info
+  Award, Fingerprint, Info, Image as ImageIcon, Trash2
 } from 'lucide-react'
+import { LOGO_URL } from '../lib/branding'
+import { getReceipts, setReceiptVerified, deleteReceipt } from '../lib/receipts'
 
 const CASES = [
   { id: 'CS-2026-0891', client: 'Jane D.', email: 'jane.d@email.com', chain: 'BTC', amount: '$52,140', status: 'Funds Located', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jul 28', feeRequired: '$3,000', feePaid: false, txHash: '—', eta: 'Awaiting fee' },
@@ -76,7 +78,7 @@ const ANALYSIS_SAMPLE = {
   ],
 }
 
-type AdminTab = 'overview' | 'cases' | 'payments' | 'analysis' | 'analytics' | 'notifications' | 'audit'
+type AdminTab = 'overview' | 'cases' | 'payments' | 'receipts' | 'analysis' | 'analytics' | 'notifications' | 'audit'
 
 interface Props { onBack: () => void }
 
@@ -85,6 +87,7 @@ export default function AdminPanel({ onBack }: Props) {
   const [search, setSearch] = useState('')
   const [chainFilter, setChainFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
+  const [receipts, setReceipts] = useState(() => getReceipts())
 
   const filteredCases = CASES.filter(c =>
     (c.id.includes(search) || c.client.toLowerCase().includes(search.toLowerCase()) || c.status.toLowerCase().includes(search.toLowerCase())) &&
@@ -103,6 +106,7 @@ export default function AdminPanel({ onBack }: Props) {
     { id: 'overview', label: 'Overview', icon: BarChart2 },
     { id: 'cases', label: 'Cases', icon: FileText },
     { id: 'payments', label: 'Payments', icon: DollarSign },
+    { id: 'receipts', label: 'Receipts', icon: ImageIcon },
     { id: 'analysis', label: 'Blockchain Analysis', icon: Network },
     { id: 'analytics', label: 'Analytics', icon: PieChart },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -116,7 +120,7 @@ export default function AdminPanel({ onBack }: Props) {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-6 w-auto object-contain" />
+              <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-6 w-auto object-contain" />
               <span className="font-medium text-sm text-white">CryptoWallet Tracker Admin</span>
             </div>
             <span className="font-mono text-[10px] bg-[#f7931a]/20 text-[#f7931a] px-2 py-0.5 rounded-full uppercase tracking-widest">Secure Portal</span>
@@ -417,6 +421,77 @@ export default function AdminPanel({ onBack }: Props) {
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Receipts */}
+            {tab === 'receipts' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-lg">Payment Receipts</h2>
+                    <p className="text-sm text-[#3d4452]">Receipts uploaded by clients after sending the recovery fee.</p>
+                  </div>
+                  <span className="font-mono text-xs bg-[#f7931a]/10 text-[#f7931a] px-2.5 py-1 rounded-full">{receipts.length} uploaded</span>
+                </div>
+
+                {receipts.length === 0 ? (
+                  <div className="bg-white border border-[#e2e6ed] rounded-xl p-12 text-center">
+                    <div className="w-14 h-14 rounded-full bg-[#f7931a]/10 border border-[#f7931a]/30 flex items-center justify-center mx-auto mb-4">
+                      <ImageIcon size={22} className="text-[#f7931a]" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-1">No receipts yet</h3>
+                    <p className="text-sm text-[#3d4452] max-w-sm mx-auto">When a client uploads their payment receipt after sending the service fee, it will appear here for verification.</p>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {receipts.map(r => (
+                      <div key={r.id} className="bg-white border border-[#e2e6ed] rounded-xl overflow-hidden">
+                        <div className="px-5 py-4 border-b border-[#e2e6ed] flex items-center justify-between">
+                          <div>
+                            <p className="font-mono text-xs text-[#0057ff]">{r.id}</p>
+                            <p className="font-mono text-[10px] text-[#6b7280]">{r.caseId} · {r.clientName}</p>
+                          </div>
+                          <span className={`font-mono text-[10px] px-2.5 py-1 rounded-full ${
+                            r.verified ? 'bg-[#e3f5ee] text-[#00875a]' : 'bg-[#fef3c7] text-[#b45309]'
+                          }`}>{r.verified ? 'Verified' : 'Pending review'}</span>
+                        </div>
+                        <div className="p-5">
+                          {r.dataUrl.startsWith('data:image') ? (
+                            <img src={r.dataUrl} alt={r.fileName} className="w-full h-44 object-contain bg-[#f8f9fb] border border-[#e2e6ed] rounded-lg" />
+                          ) : (
+                            <div className="w-full h-44 flex flex-col items-center justify-center bg-[#f8f9fb] border border-[#e2e6ed] rounded-lg gap-2">
+                              <FileText size={28} className="text-[#6b7280]" />
+                              <p className="font-mono text-xs text-[#6b7280]">PDF document</p>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between mt-4">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{r.fileName}</p>
+                              <p className="font-mono text-[10px] text-[#6b7280]">{new Date(r.uploadedAt).toLocaleString()}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <a href={r.dataUrl} download={r.fileName}
+                                className="flex items-center gap-1 text-xs text-[#6b7280] hover:text-[#0057ff] font-medium">
+                                <Download size={12} /> Open
+                              </a>
+                              {!r.verified && (
+                                <button onClick={() => { setReceiptVerified(r.id, true); setReceipts(getReceipts()) }}
+                                  className="flex items-center gap-1 text-xs bg-[#00875a] text-white px-3 py-1.5 rounded-lg hover:bg-[#006b48] font-medium">
+                                  <Check size={12} /> Verify
+                                </button>
+                              )}
+                              <button onClick={() => { deleteReceipt(r.id); setReceipts(getReceipts()) }}
+                                className="flex items-center gap-1 text-xs text-[#dc2626] hover:underline font-medium">
+                                <Trash2 size={12} /> Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

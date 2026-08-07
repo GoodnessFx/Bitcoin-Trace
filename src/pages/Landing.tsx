@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Page } from '../App'
 import type { AuthUser } from '../lib/auth'
+import { LOGO_URL } from '../lib/branding'
 import {
   Search, FileText, Lock, Globe, ChevronRight, ArrowRight,
   Check, AlertTriangle, Activity, Menu, X, Star, Eye, Database,
@@ -282,7 +283,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
       <nav className="sticky top-0 z-50 bg-white/96 backdrop-blur-sm border-b border-[#e4e8f0]">
         <div className="max-w-7xl mx-auto px-6 h-[60px] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-8 w-auto object-contain" />
+            <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-8 w-auto object-contain" />
             <div>
               <span className="font-heading font-700 text-[15px] tracking-tight">CryptoWallet Tracker</span>
               <span className="font-mono text-[9px] text-[#f7931a] ml-2 uppercase tracking-widest">Crypto Recovery</span>
@@ -830,7 +831,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
       <footer className="border-t border-[#e4e8f0] bg-white">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-2">
-            <img src="/logo.jpg" alt="CryptoWallet Tracker" className="h-7 w-auto object-contain" />
+            <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-7 w-auto object-contain" />
             <span className="font-heading font-600 text-sm">CryptoWallet Tracker</span>
             <span className="font-mono text-[9px] text-[#8b92a5] uppercase tracking-widest ml-1">Crypto Recovery</span>
           </div>
