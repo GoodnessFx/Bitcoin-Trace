@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Lock, Eye, EyeOff, ArrowLeft, Mail,
-  X, Check, LogIn, UserPlus, Loader
+  Check, LogIn, UserPlus, Loader
 } from 'lucide-react'
 import { LOGO_URL } from '../lib/branding'
 
@@ -24,12 +24,6 @@ interface Props {
   onBack: () => void
 }
 
-const GOOGLE_ACCOUNTS = [
-  { name: 'James Carter', email: 'james.carter@gmail.com', color: '#4285F4' },
-  { name: 'Sarah Mitchell', email: 'sarah.mitchell@gmail.com', color: '#34A853' },
-  { name: 'Oluwaseun Adeyemi', email: 'oluwaseun.a@gmail.com', color: '#FBBC05' },
-]
-
 export default function AuthPage({ onAuth, onBack }: Props) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [show, setShow] = useState(false)
@@ -38,10 +32,6 @@ export default function AuthPage({ onAuth, onBack }: Props) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [googleOpen, setGoogleOpen] = useState(false)
-  const [googleName, setGoogleName] = useState('')
-  const [googleEmail, setGoogleEmail] = useState('')
-  const [googleStep, setGoogleStep] = useState<'chooser' | 'custom'>('chooser')
   const [remember, setRemember] = useState(true)
   const [googleReady, setGoogleReady] = useState(false)
   const googleBtnRef = useRef<HTMLDivElement>(null)
@@ -69,34 +59,17 @@ export default function AuthPage({ onAuth, onBack }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     if (!remember) localStorage.removeItem('bt_session')
     setBusy(true)
-    setTimeout(() => {
-      const result = mode === 'signup'
-        ? signUp(name, email, password)
-        : signIn(email, password)
-      setBusy(false)
-      if ('error' in result) { setError(result.error); return }
-      onAuth(result.user)
-    }, 600)
-  }
-
-  const pickGoogle = (name: string, email: string) => {
-    setGoogleOpen(false)
-    setError('')
-    const { user } = signInWithGoogle(name, email)
-    onAuth(user)
-  }
-
-  const googleContinue = () => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleEmail.trim())) {
-      setError('Enter a valid Gmail address to continue.')
-      return
-    }
-    pickGoogle(googleName || googleEmail.split('@')[0], googleEmail)
+    const result = mode === 'signup'
+      ? await signUp(name, email, password)
+      : await signIn(email, password)
+    setBusy(false)
+    if ('error' in result) { setError(result.error); return }
+    onAuth(result.user)
   }
 
   return (
@@ -123,7 +96,7 @@ export default function AuthPage({ onAuth, onBack }: Props) {
           </p>
 
           {/* Google button */}
-          {hasGoogleClientId() ? (
+          {hasGoogleClientId() && (
             <div>
               <div ref={googleBtnRef} className="w-full" />
               {!googleReady && (
@@ -136,11 +109,6 @@ export default function AuthPage({ onAuth, onBack }: Props) {
                 <span className="text-[10px] text-[#6b7280]">Uses the Google account already signed in on this browser</span>
               </div>
             </div>
-          ) : (
-            <button onClick={() => { setError(''); setGoogleStep('chooser'); setGoogleOpen(true) }}
-              className="w-full flex items-center justify-center gap-3 border border-[#e2e6ed] rounded-xl py-2.5 hover:bg-[#f8f9fb] transition-colors text-sm font-medium">
-              <GoogleG /> Continue with Google
-            </button>
           )}
 
           <div className="flex items-center gap-3 my-6">
@@ -173,7 +141,7 @@ export default function AuthPage({ onAuth, onBack }: Props) {
                 <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa1ae]" />
                 <input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                   className="w-full border border-[#e2e6ed] rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#0057ff] transition-colors"
-                  placeholder="••••••••" />
+                  placeholder={mode === 'signup' ? 'At least 8 characters' : '••••••••'} />
                 <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
                   {show ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -207,74 +175,6 @@ export default function AuthPage({ onAuth, onBack }: Props) {
           <Lock size={10} /> Protected by end-to-end encrypted session
         </p>
       </div>
-
-      {/* Google account chooser modal */}
-      {googleOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setGoogleOpen(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="px-6 pt-6 pb-4 flex items-start justify-between">
-              <div className="w-10 h-10 rounded-full bg-white border border-[#e2e6ed] flex items-center justify-center shadow-sm">
-                <GoogleG size={20} />
-              </div>
-              <button onClick={() => setGoogleOpen(false)} className="text-[#6b7280] hover:text-[#0f1117]"><X size={18} /></button>
-            </div>
-
-            {googleStep === 'chooser' ? (
-              <>
-                <h2 className="px-6 text-lg font-medium">Choose an account</h2>
-                <p className="px-6 text-sm text-[#6b7280] mb-4">to continue to CryptoWallet Tracker</p>
-                <div className="border-t border-[#e2e6ed]">
-                  {GOOGLE_ACCOUNTS.map(a => (
-                    <button key={a.email} onClick={() => pickGoogle(a.name, a.email)}
-                      className="w-full flex items-center gap-3 px-6 py-3 hover:bg-[#f8f9fb] transition-colors text-left">
-                      <div className="w-9 h-9 rounded-full text-white flex items-center justify-center text-xs font-medium" style={{ background: a.color }}>{a.name.split(' ').map(w => w[0]).join('')}</div>
-                      <div>
-                        <p className="text-sm text-[#0f1117]">{a.name}</p>
-                        <p className="text-xs text-[#6b7280]">{a.email}</p>
-                      </div>
-                    </button>
-                  ))}
-                  <button onClick={() => { setGoogleStep('custom'); setError('') }}
-                    className="w-full flex items-center gap-3 px-6 py-3 hover:bg-[#f8f9fb] transition-colors text-left border-t border-[#e2e6ed]">
-                    <div className="w-9 h-9 rounded-full bg-[#f1f3f7] flex items-center justify-center">
-                      <UserPlus size={15} className="text-[#3d4452]" />
-                    </div>
-                    <span className="text-sm text-[#0057ff] font-medium">Use another account</span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2 className="px-6 text-lg font-medium">Sign in with Google</h2>
-                <p className="px-6 text-sm text-[#6b7280] mb-4">Enter the account you want to use.</p>
-                <div className="px-6 space-y-3 pb-6">
-                  <div>
-                    <label className="text-xs text-[#6b7280] block mb-1.5">Name</label>
-                    <input value={googleName} onChange={e => setGoogleName(e.target.value)}
-                      className="w-full border border-[#e2e6ed] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#4285F4]"
-                      placeholder="Your name" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-[#6b7280] block mb-1.5">Email</label>
-                    <input value={googleEmail} onChange={e => setGoogleEmail(e.target.value)}
-                      className="w-full border border-[#e2e6ed] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#4285F4]"
-                      placeholder="you@gmail.com" />
-                  </div>
-                  {error && <p className="text-xs text-[#dc2626]">{error}</p>}
-                  <button onClick={googleContinue}
-                    className="w-full bg-[#4285F4] text-white font-medium py-2.5 rounded-xl hover:bg-[#3367d6] transition-colors text-sm">
-                    Continue
-                  </button>
-                  <button onClick={() => { setGoogleStep('chooser'); setError('') }}
-                    className="w-full text-center text-xs text-[#6b7280] hover:text-[#0f1117]">
-                    Back
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
