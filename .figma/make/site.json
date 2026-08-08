@@ -1,6 +1,9 @@
 {
   "title": "CryptoWallet Tracker — Bitcoin & Crypto Recovery",
   "description": "CryptoWallet Tracker helps recover lost or stolen Bitcoin and cryptocurrency. Blockchain tracing, wallet analysis, case management, and secure client communication.",
+  "icons": {
+    "icon": "/logo.jpg"
+  },
   "robots": {
     "index": true
   },
