@@ -242,10 +242,6 @@ export default function AuthPage({ onAuth, onBack }: Props) {
                     <span className="text-sm text-[#0057ff] font-medium">Use another account</span>
                   </button>
                 </div>
-                <div className="px-6 py-4 flex items-center justify-between text-xs text-[#6b7280] border-t border-[#e2e6ed]">
-                  <span>Demo authentication</span>
-                  <span className="flex items-center gap-1"><Lock size={10} /> Simulated</span>
-                </div>
               </>
             ) : (
               <>

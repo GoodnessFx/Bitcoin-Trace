@@ -34,16 +34,6 @@ const MESSAGES = [
   { from: 'Investigator', time: '1d ago', text: 'We have identified two exchanges that received funds. One is a US-registered entity. Report update coming within 24 hours.' },
 ]
 
-const TIMELINE = [
-  { date: 'Jul 28', event: 'Case submitted', done: true },
-  { date: 'Jul 29', event: 'Initial review complete', done: true },
-  { date: 'Jul 30', event: 'On-chain tracing started', done: true },
-  { date: 'Jul 31', event: 'Wallet recovery scan', done: true },
-  { date: 'Aug 1', event: 'Funds located — 0.84 BTC recovered', done: true },
-  { date: 'Aug 2', event: 'Recovery fee settlement', done: false },
-  { date: 'Aug 3', event: 'Fund release coordination', done: false },
-]
-
 const EVIDENCE = [
   { name: 'Police_Report_Hack.pdf', size: '1.2 MB', type: 'PDF', date: 'Jul 28, 2026', status: 'Verified' },
   { name: 'Exchange_Statement_Jul.pdf', size: '840 KB', type: 'PDF', date: 'Jul 28, 2026', status: 'Verified' },
@@ -346,20 +336,34 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                 ))}
 
                 {/* Timeline */}
-                <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
-                  <p className="font-medium mb-4 flex items-center gap-2"><Clock size={15} className="text-[#0057ff]" /> Case Timeline — CS-2026-0891</p>
-                  <div className="space-y-3">
-                    {TIMELINE.map((t, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${t.done ? 'bg-[#0057ff]' : 'bg-[#f1f3f7] border border-[#e2e6ed]'}`}>
-                          {t.done ? <Check size={12} className="text-white" /> : <div className="w-2 h-2 rounded-full bg-[#c8cfd9]" />}
-                        </div>
-                        <span className={`text-sm ${t.done ? 'text-[#0f1117]' : 'text-[#6b7280]'}`}>{t.event}</span>
-                        <span className="font-mono text-xs text-[#6b7280] ml-auto">{t.date}</span>
+                {cases[0] && (() => {
+                  const c = cases[0]
+                  const steps = [
+                    { date: c.created, event: 'Case submitted', done: true },
+                    { date: c.created, event: 'Initial review complete', done: true },
+                    { date: c.created, event: 'On-chain tracing started', done: true },
+                    { date: c.created, event: 'Wallet recovery scan', done: true },
+                    { date: c.created, event: 'Funds located', done: c.status === 'Funds Located' },
+                    { date: c.created, event: 'Recovery fee settlement', done: Boolean(c.feePaid) },
+                    { date: c.created, event: 'Fund release coordination', done: phase === 'done' },
+                  ]
+                  return (
+                    <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
+                      <p className="font-medium mb-4 flex items-center gap-2"><Clock size={15} className="text-[#0057ff]" /> Case Timeline — {c.id}</p>
+                      <div className="space-y-3">
+                        {steps.map((t, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${t.done ? 'bg-[#0057ff]' : 'bg-[#f1f3f7] border border-[#e2e6ed]'}`}>
+                              {t.done ? <Check size={12} className="text-white" /> : <div className="w-2 h-2 rounded-full bg-[#c8cfd9]" />}
+                            </div>
+                            <span className={`text-sm ${t.done ? 'text-[#0f1117]' : 'text-[#6b7280]'}`}>{t.event}</span>
+                            <span className={`font-mono text-xs ml-auto ${t.done ? 'text-[#6b7280]' : 'text-[#8b92a5]'}`}>{t.done ? t.date : 'Pending'}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                  )
+                })()}
               </div>
             )}
 
