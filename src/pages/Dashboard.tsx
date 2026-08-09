@@ -793,7 +793,6 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                       </div>
                     </div>
                   ))}
-                  <p className="mt-4 text-xs text-[#6b7280] flex items-center gap-1.5"><Lock size={11} /> Demo mode: files are stored only in your browser (localStorage) — nothing is sent to a server.</p>
                 </div>
                 {evidenceError && (
                   <div className="bg-[#fef3c7] rounded-xl p-4 flex gap-3">
