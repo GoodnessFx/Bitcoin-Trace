@@ -207,7 +207,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
             </button>
             <span className="text-[#e2e6ed]">/</span>
             <div className="flex items-center gap-2">
-              <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-6 w-auto object-contain" />
+              <img src={LOGO_URL} alt="" className="h-6 w-auto object-contain" />
               <span className="font-medium text-sm">CryptoWallet Tracker</span>
             </div>
           </div>

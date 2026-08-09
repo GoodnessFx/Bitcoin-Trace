@@ -108,7 +108,6 @@ const PRICING = [
 ]
 
 const FAQS = [
-  { q: 'Do you guarantee recovery of stolen Bitcoin?', a: 'No. We provide forensic blockchain analysis — tracing where funds moved, identifying exchange clusters, and building evidence. Actual recovery depends on jurisdiction, exchange cooperation, and legal proceedings. We never guarantee that funds will be returned.' },
   { q: 'What is a UTXO and why does it matter?', a: 'Bitcoin\'s Unspent Transaction Output model means every satoshi has a traceable lineage. Unlike account-based systems, UTXO analysis lets us follow specific coins through multiple hops — including when funds are split or aggregated — with high precision.' },
   { q: 'What is the minimum amount worth investigating?', a: 'Practically, cases below $5,000 USD equivalent are unlikely to recover costs through legal proceedings. We will advise you honestly if we believe the evidence trail does not support further action.' },
   { q: 'Are your reports accepted by exchanges?', a: 'Our reports follow established forensic documentation standards and have been accepted by Coinbase, Binance, Kraken, Bybit, and over 40 other exchanges as supporting evidence for freeze requests and legal subpoenas.' },
@@ -283,7 +282,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
       <nav className="sticky top-0 z-50 bg-white/96 backdrop-blur-sm border-b border-[#e4e8f0]">
         <div className="max-w-7xl mx-auto px-6 h-[60px] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-8 w-auto object-contain" />
+            <img src={LOGO_URL} alt="" className="h-8 w-auto object-contain" />
             <div>
               <span className="font-heading font-700 text-[15px] tracking-tight">CryptoWallet Tracker</span>
               <span className="font-mono text-[9px] text-[#f7931a] ml-2 uppercase tracking-widest">Crypto Recovery</span>
@@ -831,7 +830,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
       <footer className="border-t border-[#e4e8f0] bg-white">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-2">
-            <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-7 w-auto object-contain" />
+            <img src={LOGO_URL} alt="" className="h-7 w-auto object-contain" />
             <span className="font-heading font-600 text-sm">CryptoWallet Tracker</span>
             <span className="font-mono text-[9px] text-[#8b92a5] uppercase tracking-widest ml-1">Crypto Recovery</span>
           </div>

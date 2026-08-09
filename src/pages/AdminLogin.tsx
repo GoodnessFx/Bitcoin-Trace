@@ -40,7 +40,7 @@ export default function AdminLogin({ onAuth, onBack }: Props) {
 
         <div className="bg-white border border-[#e2e6ed] rounded-2xl p-8">
           <div className="flex items-center gap-2 mb-6">
-            <img src={LOGO_URL} alt="CryptoWallet Tracker" className="h-9 w-auto object-contain" />
+            <img src={LOGO_URL} alt="" className="h-9 w-auto object-contain" />
             <div>
               <p className="font-semibold text-sm">CryptoWallet Tracker</p>
               <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">Admin Portal</p>
