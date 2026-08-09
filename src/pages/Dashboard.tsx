@@ -5,7 +5,7 @@ import { LOGO_URL } from '../lib/branding'
 import { addReceipt } from '../lib/receipts'
 import { loadList, saveList } from '../lib/storage'
 import {
-  Search, Upload, FileText, Clock,
+  Search, FileText, Clock,
   ArrowLeft, AlertTriangle, Check, ChevronRight,
   Lock, Plus, Download, Loader, Bell, Receipt, Copy,
   FolderOpen, User, FileUp, Bitcoin, LogOut, Wallet
@@ -555,15 +555,6 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                           <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
                             className="w-full border border-[#e2e6ed] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#0057ff]" />
                         </div>
-                      </div>
-                      <div className="border-2 border-dashed border-[#e2e6ed] rounded-xl p-6 text-center hover:border-[#0057ff]/30 transition-colors cursor-pointer">
-                        <Upload size={20} className="mx-auto text-[#6b7280] mb-2" />
-                        <p className="text-sm text-[#3d4452]">Upload supporting documents</p>
-                        <p className="text-xs text-[#6b7280] mt-1">Police reports, exchange records, screenshots — PDF, JPG, PNG (max 20 MB)</p>
-                      </div>
-                      <div className="bg-[#fef3c7] rounded-xl p-4 flex gap-3">
-                        <AlertTriangle size={16} className="text-[#b45309] flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-[#b45309]">Recovery outcomes cannot be guaranteed. Investigation fees cover forensic analysis and are non-refundable. We will provide a transparent assessment of your case's prospects before you commit to a plan.</p>
                       </div>
                       <button onClick={() => setSubmitDone(true)}
                         className="w-full bg-[#0057ff] text-white font-medium py-3 rounded-xl hover:bg-[#0042cc] transition-colors">
