@@ -17,10 +17,17 @@ function initialsOf(name: string): string {
 
 function mapUser(u: User): AuthUser {
   const meta = u.user_metadata as Record<string, unknown> | undefined
-  const name =
-    (typeof meta?.full_name === 'string' && meta.full_name) ||
-    (typeof meta?.name === 'string' && meta.name) ||
-    'Google User'
+  const identity = u.identities?.[0]?.identity_data as Record<string, unknown> | undefined
+  console.log('[auth] user_metadata', meta)
+  console.log('[auth] identity_data', identity)
+  const pick = (keys: string[]): string => {
+    for (const k of keys) {
+      const v = meta?.[k] ?? identity?.[k]
+      if (typeof v === 'string' && v.trim()) return v
+    }
+    return ''
+  }
+  const name = pick(['full_name', 'name', 'display_name']) || u.email?.split('@')[0] || 'Google User'
   return {
     name,
     email: u.email || '',
@@ -29,7 +36,7 @@ function mapUser(u: User): AuthUser {
     joined: u.created_at
       ? new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : '',
-    picture: typeof meta?.avatar_url === 'string' ? meta.avatar_url : undefined,
+    picture: pick(['avatar_url', 'picture', 'avatar']) || undefined,
   }
 }
 
@@ -39,9 +46,13 @@ export function useAuth() {
 
   useEffect(() => {
     let active = true
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }) => {
       if (!active) return
-      setUser(data.session ? mapUser(data.session.user) : null)
+      setUser(data.user ? mapUser(data.user) : null)
+      setLoading(false)
+    }).catch(() => {
+      if (!active) return
+      setUser(null)
       setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
