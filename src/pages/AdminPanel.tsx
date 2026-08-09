@@ -347,7 +347,7 @@ export default function AdminPanel({ onBack }: Props) {
             {/* Payments */}
             {tab === 'payments' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
                     { label: 'Total Collected', value: '$54,000', sub: 'All time' },
                     { label: 'This Month', value: '$21,000', sub: 'Aug 2026' },
@@ -408,7 +408,7 @@ export default function AdminPanel({ onBack }: Props) {
                     <span className="font-mono text-[9px] text-white/40 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#f7931a] animate-pulse inline-block" /> LIVE</span>
                   </div>
                   <p className="font-mono text-xs text-white/70 break-all mb-2">bc1qs9qkg8crclkyxcjlj6vr3hlwuz60d6wu7yhfta</p>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { label: 'Confirmed Balance', value: '1.92 BTC' },
                       { label: 'Pending Confirmations', value: '0' },

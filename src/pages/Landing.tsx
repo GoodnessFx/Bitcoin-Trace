@@ -199,7 +199,7 @@ function NetworkGraph() {
     [0,1],[0,6],[1,2],[1,6],[2,3],[2,4],[2,7],[3,5],[4,5],[6,7],[7,4],
   ]
   return (
-    <svg viewBox="0 0 365 165" className="w-full" style={{ height: 120 }}>
+    <svg viewBox="0 0 365 165" preserveAspectRatio="xMidYMid meet" className="w-full h-auto aspect-[365/165]">
       {edges.map(([a, b], i) => (
         <line key={i}
           x1={nodes[a].x} y1={nodes[a].y}
@@ -378,7 +378,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
                 Bitcoin Blockchain Forensics — Active
               </div>
 
-              <h1 className="font-heading text-[52px] lg:text-[64px] leading-[1.04] font-700 mb-6 animate-fade-up-d1">
+              <h1 className="font-heading text-4xl sm:text-5xl lg:text-[64px] leading-[1.08] font-700 mb-6 animate-fade-up-d1">
                 CryptoWallet<br />
                 <span className="text-[#f7931a]">Tracker.</span><br />
                 <span className="text-[#0057ff]">Track & Recover.</span>
@@ -399,7 +399,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
                 </button>
               </div>
 
-              <div className="mt-8 flex items-center gap-6 animate-fade-up-d3">
+              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4 animate-fade-up-d3">
                 {STATS.map(s => (
                   <div key={s.label}>
                     <p className="font-heading font-700 text-[22px] text-[#0a0c10]">{s.value}</p>
@@ -490,7 +490,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
         <div className="relative max-w-7xl mx-auto px-6 py-20">
           <div className="mb-12">
             <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-3">[ START RECOVERY ]</p>
-            <h2 className="font-heading font-700 text-[36px] leading-tight mb-3">Start a Recovery Case</h2>
+            <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight mb-3">Start a Recovery Case</h2>
             <p className="font-body text-[14px] text-[#5a6174] max-w-xl">Scan the wallet where your funds were sent. We trace the chain, locate your recoverable balance, and guide you through the release process.</p>
           </div>
 
@@ -586,7 +586,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
           <div className="grid lg:grid-cols-[280px_1fr] gap-12 items-start">
             <div>
               <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-3">[ SERVICES ]</p>
-              <h2 className="font-heading font-700 text-[36px] leading-tight mb-4">What We Investigate</h2>
+              <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight mb-4">What We Investigate</h2>
               <p className="font-body text-sm text-[#5a6174] leading-relaxed mb-6">Bitcoin is the primary focus. Every case begins with UTXO-level analysis — the most precise tracing method available for any blockchain.</p>
               <div className="border-l-2 border-[#f7931a] pl-4">
                 <p className="font-mono text-[10px] text-[#8b92a5] uppercase tracking-widest mb-1">Primary Chain</p>
@@ -619,7 +619,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
         <div className="max-w-7xl mx-auto px-6 py-20">
           <div className="mb-12">
             <p className="font-mono text-[10px] text-[#0057ff] uppercase tracking-widest mb-3">[ METHODOLOGY ]</p>
-            <h2 className="font-heading font-700 text-[36px] leading-tight mb-3">Bitcoin Tracing Process</h2>
+            <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight mb-3">Bitcoin Tracing Process</h2>
             <p className="font-body text-[14px] text-[#5a6174] max-w-xl">Every step is documented with on-chain evidence. No black boxes. You receive a full audit trail of our methodology alongside the findings.</p>
           </div>
 
@@ -652,7 +652,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
           <div className="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div>
               <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-3">[ INTELLIGENCE SUITE ]</p>
-              <h2 className="font-heading font-700 text-[36px] leading-tight text-white mb-3">Forensic Tool Stack</h2>
+              <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight text-white mb-3">Forensic Tool Stack</h2>
               <p className="font-body text-[14px] text-white/50 max-w-xl">Purpose-built for Bitcoin. Each tool is calibrated on a database of 900M+ UTXOs and 4M+ flagged addresses accumulated since 2014.</p>
             </div>
             <div className="font-mono text-[10px] text-white/30 text-right">
@@ -689,7 +689,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
         <div className="max-w-7xl mx-auto px-6 py-20">
           <div className="mb-12">
             <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-3">[ CLIENT CASES ]</p>
-            <h2 className="font-heading font-700 text-[36px] leading-tight mb-2">Investigation Outcomes</h2>
+            <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight mb-2">Investigation Outcomes</h2>
             <p className="font-body text-[12px] text-[#8b92a5] italic">Names abbreviated for client privacy. Quotes describe investigation experience — not guaranteed outcomes.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -720,7 +720,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
         <div className="max-w-4xl mx-auto px-6 py-20">
           <div className="mb-12 text-center">
             <p className="font-mono text-[10px] text-[#0057ff] uppercase tracking-widest mb-3">[ INVESTIGATION FEES ]</p>
-            <h2 className="font-heading font-700 text-[36px] leading-tight mb-3">Fixed-Fee Forensic Analysis</h2>
+            <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight mb-3">Fixed-Fee Forensic Analysis</h2>
             <p className="font-body text-sm text-[#5a6174] max-w-xl mx-auto">Fees cover investigator time, tooling, and report production. They are not contingent on recovery — we bill for the forensic work, not the outcome.</p>
           </div>
 
@@ -782,7 +782,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
         <div className="max-w-3xl mx-auto px-6 py-20">
           <div className="mb-12">
             <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-3">[ FAQ ]</p>
-            <h2 className="font-heading font-700 text-[36px] leading-tight">Questions</h2>
+            <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight">Questions</h2>
           </div>
           <div className="space-y-2">
             {FAQS.map((faq, i) => (
@@ -808,7 +808,7 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
         <div className="absolute inset-0 dot-matrix opacity-20" />
         <div className="relative max-w-4xl mx-auto px-6 py-20 text-center">
           <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-5">[ OPEN AN INVESTIGATION ]</p>
-          <h2 className="font-heading font-700 text-[44px] text-white leading-tight mb-4">
+          <h2 className="font-heading font-700 text-4xl md:text-[44px] text-white leading-tight mb-4">
             Your BTC Left a<br />
             <span className="text-[#f7931a]">Permanent Trail.</span>
           </h2>
