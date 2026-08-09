@@ -326,37 +326,37 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
     <div className="min-h-screen bg-[#f8f9fb] text-[#0f1117]">
       {/* Top bar */}
       <div className="bg-white border-b border-[#e2e6ed] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#0f1117] transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={onBack} className="flex-shrink-0 flex items-center gap-1.5 text-sm text-[#6b7280] hover:text-[#0f1117] transition-colors">
               <ArrowLeft size={15} /> Back
             </button>
-            <span className="text-[#e2e6ed]">/</span>
-            <div className="flex items-center gap-2">
-              <img src={LOGO_URL} alt="" className="h-6 w-auto object-contain" />
-              <span className="font-medium text-sm">CryptoWallet Tracker</span>
+            <span className="text-[#e2e6ed] flex-shrink-0">/</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <img src={LOGO_URL} alt="" className="h-6 w-auto object-contain flex-shrink-0" />
+              <span className="font-medium text-sm truncate">CryptoWallet Tracker</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs bg-[#e3f5ee] text-[#00875a] px-2 py-1 rounded-full flex items-center gap-1">
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <span className="hidden sm:flex font-mono text-xs bg-[#e3f5ee] text-[#00875a] px-2 py-1 rounded-full items-center gap-1">
               <Lock size={10} /> Encrypted Session
             </span>
             {user ? (
               <div className="flex items-center gap-2">
                 {user.picture
-                  ? <img src={user.picture} alt="" className="w-8 h-8 rounded-full object-cover" />
-                  : <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs">{user.initials}</div>}
-                <div className="hidden sm:block leading-tight">
-                  <p className="text-xs font-medium">{user.name}</p>
-                  <p className="font-mono text-[10px] text-[#6b7280]">{user.provider === 'google' ? 'Google account' : user.email}</p>
+                  ? <img src={user.picture} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                  : <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs flex-shrink-0">{user.initials}</div>}
+                <div className="hidden sm:block leading-tight min-w-0">
+                  <p className="text-xs font-medium truncate">{user.name}</p>
+                  <p className="font-mono text-[10px] text-[#6b7280] truncate">{user.provider === 'google' ? 'Google account' : user.email}</p>
                 </div>
                 <button onClick={onSignOut} title="Sign out"
-                  className="w-8 h-8 rounded-full border border-[#e2e6ed] flex items-center justify-center text-[#6b7280] hover:text-[#dc2626] hover:border-[#dc2626]/30 transition-colors">
+                  className="flex-shrink-0 w-8 h-8 rounded-full border border-[#e2e6ed] flex items-center justify-center text-[#6b7280] hover:text-[#dc2626] hover:border-[#dc2626]/30 transition-colors">
                   <LogOut size={13} />
                 </button>
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs">?</div>
+              <div className="w-8 h-8 rounded-full bg-[#0057ff] flex items-center justify-center text-white font-medium text-xs flex-shrink-0">?</div>
             )}
           </div>
         </div>
