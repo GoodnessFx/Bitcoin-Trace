@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import {
-  Lock, Eye, EyeOff, ArrowLeft, Mail,
-  Check, LogIn, UserPlus, Loader
-} from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, Loader } from 'lucide-react'
 import { LOGO_URL } from '../lib/branding'
+import { supabase, hasSupabaseConfig } from '../lib/supabase'
 
 function GoogleG({ size = 18 }: { size?: number }) {
   return (
@@ -15,61 +13,26 @@ function GoogleG({ size = 18 }: { size?: number }) {
     </svg>
   )
 }
-import type { AuthUser } from '../lib/auth'
-import { signUp, signIn, signInWithGoogle } from '../lib/auth'
-import { initGoogleAuth, renderGoogleButton, promptGoogleOneTap, hasGoogleClientId } from '../lib/google'
 
 interface Props {
-  onAuth: (user: AuthUser) => void
   onBack: () => void
 }
 
-export default function AuthPage({ onAuth, onBack }: Props) {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
-  const [show, setShow] = useState(false)
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+export default function AuthPage({ onBack }: Props) {
   const [busy, setBusy] = useState(false)
-  const [remember, setRemember] = useState(true)
-  const [googleReady, setGoogleReady] = useState(false)
-  const googleBtnRef = useRef<HTMLDivElement>(null)
-  const googleRendered = useRef(false)
+  const [error, setError] = useState('')
 
-  useEffect(() => {
-    let cancelled = false
-    if (!hasGoogleClientId() || googleRendered.current) return
-    initGoogleAuth(profile => {
-      const { user } = signInWithGoogle(profile.name, profile.email, profile.picture)
-      onAuth(user)
-    }).then(ok => {
-      if (cancelled) return
-      setGoogleReady(ok)
-      if (ok && googleBtnRef.current && !googleRendered.current) {
-        googleRendered.current = true
-        renderGoogleButton(googleBtnRef.current, profile => {
-          const { user } = signInWithGoogle(profile.name, profile.email, profile.picture)
-          onAuth(user)
-        })
-        promptGoogleOneTap()
-      }
-    })
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    if (!remember) localStorage.removeItem('bt_session')
+  const googleSignIn = async () => {
     setBusy(true)
-    const result = mode === 'signup'
-      ? await signUp(name, email, password)
-      : await signIn(email, password)
-    setBusy(false)
-    if ('error' in result) { setError(result.error); return }
-    onAuth(result.user)
+    setError('')
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) {
+      setBusy(false)
+      setError(error.message)
+    }
   }
 
   return (
@@ -88,91 +51,34 @@ export default function AuthPage({ onAuth, onBack }: Props) {
             </div>
           </div>
 
-          <h1 className="font-serif text-2xl mb-1">{mode === 'signin' ? 'Welcome Back' : 'Create Account'}</h1>
+          <h1 className="font-serif text-2xl mb-1">Sign in to your account</h1>
           <p className="text-sm text-[#6b7280] mb-6">
-            {mode === 'signin'
-              ? 'Sign in to access your recovery cases and portal.'
-              : 'Set up your account to open and track recovery cases.'}
+            Access your recovery cases and portal using your Google account.
           </p>
 
-          {/* Google button */}
-          {hasGoogleClientId() && (
-            <div>
-              <div ref={googleBtnRef} className="w-full" />
-              {!googleReady && (
-                <div className="w-full border border-[#e2e6ed] rounded-xl py-2.5 text-center text-sm text-[#6b7280] animate-pulse">
-                  Loading Google sign-in…
-                </div>
-              )}
-              <div className="mt-2 flex items-center gap-2">
-                <GoogleG size={14} />
-                <span className="text-[10px] text-[#6b7280]">Uses the Google account already signed in on this browser</span>
-              </div>
+          {!hasSupabaseConfig() ? (
+            <div className="border border-[#e2e6ed] rounded-xl p-4 text-sm text-[#6b7280]">
+              Google sign-in is not configured. Set <span className="font-mono">VITE_SUPABASE_URL</span> and{' '}
+              <span className="font-mono">VITE_SUPABASE_ANON_KEY</span> and restart the dev server.
             </div>
+          ) : (
+            <button onClick={googleSignIn} disabled={busy}
+              className="w-full flex items-center justify-center gap-3 border border-[#e2e6ed] rounded-xl py-3 hover:bg-[#f8f9fb] transition-colors text-sm font-medium disabled:opacity-60">
+              {busy ? <Loader size={18} className="animate-spin" /> : <GoogleG size={18} />}
+              {busy ? 'Redirecting to Google…' : 'Continue with Google'}
+            </button>
           )}
 
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-[#e2e6ed]" />
-            <span className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">or use your email</span>
-            <div className="flex-1 h-px bg-[#e2e6ed]" />
-          </div>
+          {error && <p className="text-xs text-[#dc2626] mt-3">{error}</p>}
 
-          <form onSubmit={submit} className="space-y-4">
-            {mode === 'signup' && (
-              <div>
-                <label className="text-xs text-[#6b7280] block mb-1.5">Full Name</label>
-                <input value={name} onChange={e => setName(e.target.value)} autoComplete="name"
-                  className="w-full border border-[#e2e6ed] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#0057ff] transition-colors"
-                  placeholder="Jane Doe" />
-              </div>
-            )}
-            <div>
-              <label className="text-xs text-[#6b7280] block mb-1.5">Email Address</label>
-              <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa1ae]" />
-                <input value={email} onChange={e => setEmail(e.target.value)} autoComplete="email"
-                  className="w-full border border-[#e2e6ed] rounded-xl pl-10 pr-3.5 py-2.5 text-sm focus:outline-none focus:border-[#0057ff] transition-colors"
-                  placeholder="you@example.com" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-[#6b7280] block mb-1.5">Password</label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9aa1ae]" />
-                <input type={show ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                  className="w-full border border-[#e2e6ed] rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#0057ff] transition-colors"
-                  placeholder={mode === 'signup' ? 'At least 8 characters' : '••••••••'} />
-                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b7280]">
-                  {show ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-
-            <label className="flex items-center gap-2 text-xs text-[#6b7280] cursor-pointer">
-              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="accent-[#0057ff]" />
-              Keep me signed in on this device
-            </label>
-
-            {error && <p className="text-xs text-[#dc2626]">{error}</p>}
-
-            <button type="submit" disabled={busy}
-              className="w-full bg-[#0057ff] text-white font-medium py-2.5 rounded-xl hover:bg-[#0042cc] transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-60">
-              {busy ? <Loader size={14} className="animate-spin" /> : mode === 'signin' ? <LogIn size={14} /> : <UserPlus size={14} />}
-              {mode === 'signin' ? 'Sign In' : 'Create Account'}
-            </button>
-          </form>
-
-          <p className="text-center text-xs text-[#6b7280] mt-5">
-            {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={() => { setError(''); setMode(mode === 'signin' ? 'signup' : 'signin') }}
-              className="text-[#0057ff] hover:underline font-medium">
-              {mode === 'signin' ? 'Sign up' : 'Sign in'}
-            </button>
+          <p className="text-xs text-[#6b7280] mt-4 leading-relaxed">
+            By continuing, you agree to our Terms of Service and acknowledge that your identity is verified
+            through Google. No password is stored by this site.
           </p>
         </div>
 
-        <p className="text-center text-xs text-[#6b7280] mt-6 flex items-center justify-center gap-1">
-          <Lock size={10} /> Protected by end-to-end encrypted session
+        <p className="text-center text-xs text-[#6b7280] mt-6">
+          Authenticated with Supabase Auth
         </p>
       </div>
     </div>
