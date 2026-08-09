@@ -2,6 +2,7 @@
 language = "javascript"
 framework = "vite"
 packageManager = "pnpm"
+port = 3000
 outputDirectory = "dist"
 installCommand = "pnpm install --frozen-lockfile"
 buildCommand = "pnpm run build"
