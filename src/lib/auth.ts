@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 
 export interface AuthUser {
+  id: string
   name: string
   email: string
   provider: 'google'
@@ -29,6 +30,7 @@ function mapUser(u: User): AuthUser {
   }
   const name = pick(['full_name', 'name', 'display_name']) || u.email?.split('@')[0] || 'Google User'
   return {
+    id: u.id,
     name,
     email: u.email || '',
     provider: 'google',

