@@ -334,7 +334,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
             <span className="text-[#e2e6ed] flex-shrink-0">/</span>
             <div className="flex items-center gap-2 min-w-0">
               <img src={LOGO_URL} alt="" className="h-6 w-auto object-contain flex-shrink-0" />
-              <span className="font-medium text-sm truncate">CryptoWallet Tracker</span>
+              <span className="font-medium text-sm truncate max-w-[180px]">CryptoWallet Tracker</span>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
