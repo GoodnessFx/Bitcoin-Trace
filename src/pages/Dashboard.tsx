@@ -334,7 +334,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
             <span className="text-[#e2e6ed] flex-shrink-0">/</span>
             <div className="flex items-center gap-2 min-w-0">
               <img src={LOGO_URL} alt="" className="h-6 w-auto object-contain flex-shrink-0" />
-              <span className="font-medium text-sm truncate max-w-[180px]">CryptoWallet Tracker</span>
+              <span className="font-medium text-sm truncate">CryptoWallet Tracker</span>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -572,14 +572,14 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                 <div className="bg-white border border-[#e2e6ed] rounded-xl p-7">
                   <h2 className="font-semibold text-lg mb-1">Recovery Scanner</h2>
                   <p className="text-sm text-[#3d4452] mb-5">Enter the wallet address where your funds were sent. We will scan the chain and identify recoverable funds.</p>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input value={scanAddr} onChange={e => setScanAddr(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && startScan()}
                       disabled={phase === 'scanning'}
-                      className="flex-1 border border-[#e2e6ed] rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-[#f7931a] transition-colors disabled:opacity-60"
+                      className="w-full min-w-0 sm:flex-1 border border-[#e2e6ed] rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-[#f7931a] transition-colors disabled:opacity-60"
                       placeholder="Enter BTC or ETH address to scan (e.g. 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa)" />
                     <button onClick={() => startScan()} disabled={phase === 'scanning'}
-                      className="bg-[#f7931a] text-white px-5 py-3 rounded-xl font-medium text-sm hover:bg-[#e07e10] disabled:opacity-50 transition-all flex items-center gap-2">
+                      className="flex-shrink-0 whitespace-nowrap w-full sm:w-auto bg-[#f7931a] text-white px-5 py-3 rounded-xl font-medium text-sm hover:bg-[#e07e10] disabled:opacity-50 transition-all flex items-center justify-center gap-2">
                       {phase === 'scanning' ? <Loader size={15} className="animate-spin" /> : <Search size={15} />}
                       {phase === 'scanning' ? 'Scanning…' : 'Scan'}
                     </button>
