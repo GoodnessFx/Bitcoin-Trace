@@ -57,6 +57,7 @@ const TOOLS = [
 ]
 
 const TESTIMONIALS = [
+  { name: 'Jenny Li', role: 'Private Client', country: 'United States', type: 'Funds Recovered', amount: '$200,000', quote: 'My stolen crypto was traced across multiple hops and $200,000 was successfully recovered. The forensic report was clear, the fee was one-time, and the funds were released to my verified wallet.' },
   { name: 'James T.', role: 'Private Investor', country: 'United Kingdom', type: 'Exchange Hack', quote: 'The UTXO trace report was accepted by the exchange legal team within 48 hours. They located where the funds had moved and the subpoena process began immediately.' },
   { name: 'Yuki M.', role: 'Corporate Counsel', country: 'Japan', type: 'Business Fraud', quote: 'Three wallets, nine hops, two exchanges across two jurisdictions. CryptoWallet Tracker produced a single coherent evidence document our prosecutors could follow.' },
   { name: 'Carlos R.', role: 'Fund Manager', country: 'Brazil', type: 'Ransomware', quote: 'We needed to prove the ransomware group had received our payment and then moved funds. The cluster analysis confirmed the connection definitively.' },
@@ -701,6 +702,12 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
                   ))}
                 </div>
                 <p className="font-body text-[13px] text-[#3d4452] leading-relaxed mb-4">"{t.quote}"</p>
+                {t.amount && (
+                  <div className="border border-[#00875a]/20 bg-[#e3f5ee] rounded px-3 py-1.5 mb-4 flex items-center justify-between">
+                    <span className="font-mono text-[9px] text-[#00875a] uppercase tracking-widest">Funds Recovered</span>
+                    <span className="font-heading font-700 text-[14px] text-[#00875a]">{t.amount}</span>
+                  </div>
+                )}
                 <div className="border-t border-[#e4e8f0] pt-3 flex items-center justify-between">
                   <div>
                     <p className="font-heading font-600 text-[13px]">{t.name}</p>
