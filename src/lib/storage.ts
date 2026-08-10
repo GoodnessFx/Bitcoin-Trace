@@ -27,11 +27,13 @@ export interface ClientSignIn {
 
 const SIGNINS_KEY = `${PREFIX}_client_signins`
 
+const EXCLUDED_SIGNIN_EMAILS = ['goodnessiyamah1@gmail.com']
+
 export function getClientSignIns(): ClientSignIn[] {
   try {
     const raw = localStorage.getItem(SIGNINS_KEY)
     const parsed = raw ? JSON.parse(raw) : []
-    return Array.isArray(parsed) ? (parsed as ClientSignIn[]) : []
+    return (Array.isArray(parsed) ? (parsed as ClientSignIn[]) : []).filter(s => !EXCLUDED_SIGNIN_EMAILS.includes(s.email.toLowerCase()))
   } catch {
     return []
   }
