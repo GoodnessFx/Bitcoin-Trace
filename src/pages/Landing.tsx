@@ -89,7 +89,7 @@ const PRICING = [
   },
   {
     tier: 'Advanced',
-    price: '$3,000',
+    price: '$5,000',
     per: 'per investigation',
     desc: 'Complex cases — unlimited hops, mixer analysis, cross-chain extension, court-ready report with expert declaration.',
     features: [
@@ -690,7 +690,6 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
           <div className="mb-12">
             <p className="font-mono text-[10px] text-[#f7931a] uppercase tracking-widest mb-3">[ CLIENT CASES ]</p>
             <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight mb-2">Investigation Outcomes</h2>
-            <p className="font-body text-[12px] text-[#8b92a5] italic">Names abbreviated for client privacy. Quotes describe investigation experience — not guaranteed outcomes.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {TESTIMONIALS.map(t => (
@@ -721,7 +720,6 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
           <div className="mb-12 text-center">
             <p className="font-mono text-[10px] text-[#0057ff] uppercase tracking-widest mb-3">[ INVESTIGATION FEES ]</p>
             <h2 className="font-heading font-700 text-3xl md:text-[36px] leading-tight mb-3">Fixed-Fee Forensic Analysis</h2>
-            <p className="font-body text-sm text-[#5a6174] max-w-xl mx-auto">Fees cover investigator time, tooling, and report production. They are not contingent on recovery — we bill for the forensic work, not the outcome.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
@@ -834,9 +832,6 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
             <span className="font-heading font-600 text-sm">CryptoWallet Tracker</span>
             <span className="font-mono text-[9px] text-[#8b92a5] uppercase tracking-widest ml-1">Crypto Recovery</span>
           </div>
-          <p className="font-body text-[11px] text-[#8b92a5] text-center max-w-sm">
-            Blockchain forensic analysis. Recovery is not guaranteed and depends on available on-chain evidence and legal proceedings.
-          </p>
           <div className="flex items-center gap-5 text-[11px] text-[#8b92a5]">
             <a href="#" className="hover:text-[#0a0c10] transition-colors">Privacy</a>
             <a href="#" className="hover:text-[#0a0c10] transition-colors">Terms</a>

@@ -18,3 +18,27 @@ export function loadList<T>(kind: string, userId: string): T[] {
 export function saveList<T>(kind: string, userId: string, items: T[]): void {
   localStorage.setItem(key(kind, userId), JSON.stringify(items))
 }
+
+export interface ClientSignIn {
+  email: string
+  name: string
+  lastSignIn: string
+}
+
+const SIGNINS_KEY = `${PREFIX}_client_signins`
+
+export function getClientSignIns(): ClientSignIn[] {
+  try {
+    const raw = localStorage.getItem(SIGNINS_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? (parsed as ClientSignIn[]) : []
+  } catch {
+    return []
+  }
+}
+
+export function logClientSignIn(email: string, name: string): void {
+  if (!email) return
+  const entry: ClientSignIn = { email, name: name || email, lastSignIn: new Date().toLocaleString() }
+  localStorage.setItem(SIGNINS_KEY, JSON.stringify([entry, ...getClientSignIns().filter(s => s.email !== email)]))
+}

@@ -1,48 +1,49 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import {
   ArrowLeft, Users, FileText, DollarSign, Activity,
   AlertTriangle, Check, Clock, Search, Download, Eye, Lock,
   TrendingUp, BarChart2, Bell, Settings, LogOut, Network, Globe,
   KeyRound, Filter, MessageSquare, FileUp, PieChart, Timer,
-  Award, Fingerprint, Info, Image as ImageIcon, Trash2
+  Award, Fingerprint, Info, Image as ImageIcon, Trash2, Wallet
 } from 'lucide-react'
 import { LOGO_URL } from '../lib/branding'
 import { getReceipts, setReceiptVerified, deleteReceipt } from '../lib/receipts'
+import { getClientSignIns } from '../lib/storage'
 
 const CASES = [
-  { id: 'CS-2026-0891', client: 'Jane D.', email: 'jane.d@email.com', chain: 'BTC', amount: '$52,140', status: 'Funds Located', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jul 28', feeRequired: '$3,000', feePaid: false, txHash: '—', eta: 'Awaiting fee' },
-  { id: 'CS-2026-0744', client: 'Kwame B.', email: 'kb@example.com', chain: 'ARB', amount: '$11,200', status: 'Investigation', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'Jul 12', feeRequired: '$3,000', feePaid: false, txHash: '—', eta: 'Under review' },
-  { id: 'CS-2026-0620', client: 'Natalia R.', email: 'nr@corp.io', chain: 'ETH', amount: '$6,400', status: 'Report Ready', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jun 4', feeRequired: '$3,000', feePaid: true, txHash: '3a9f8c1...b2c1', eta: 'Closed' },
-  { id: 'CS-2026-0588', client: 'Thomas M.', email: 'tm@gmail.com', chain: 'BTC', amount: '$312,592', status: 'Pending Review', investigator: 'Unassigned', paid: false, plan: 'Recovery', created: 'Jun 1', feeRequired: '$3,000', feePaid: false, txHash: '—', eta: '—' },
-  { id: 'CS-2026-0541', client: 'Priya K.', email: 'pk@fintech.sg', chain: 'SOL', amount: '$48,100', status: 'Funds Located', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'May 28', feeRequired: '$3,000', feePaid: true, txHash: 'bc1qs9qkg8crclk...', eta: 'Release pending' },
-  { id: 'CS-2026-0490', client: 'Ahmed O.', email: 'ao@legal.ae', chain: 'BTC', amount: '$9,340', status: 'Closed', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'May 15', feeRequired: '$3,000', feePaid: true, txHash: '12ab...cdef', eta: 'Closed' },
+  { id: 'CS-2026-0891', client: 'Jane D.', email: 'jane.d@email.com', chain: 'BTC', amount: '$52,140', status: 'Funds Located', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jul 28', feeRequired: '$5,000', feePaid: false, txHash: 'â€”', eta: 'Awaiting fee' },
+  { id: 'CS-2026-0744', client: 'Kwame B.', email: 'kb@example.com', chain: 'ARB', amount: '$11,200', status: 'Investigation', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'Jul 12', feeRequired: '$5,000', feePaid: false, txHash: 'â€”', eta: 'Under review' },
+  { id: 'CS-2026-0620', client: 'Natalia R.', email: 'nr@corp.io', chain: 'ETH', amount: '$6,400', status: 'Report Ready', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jun 4', feeRequired: '$5,000', feePaid: true, txHash: '3a9f8c1...b2c1', eta: 'Closed' },
+  { id: 'CS-2026-0588', client: 'Thomas M.', email: 'tm@gmail.com', chain: 'BTC', amount: '$312,592', status: 'Pending Review', investigator: 'Unassigned', paid: false, plan: 'Recovery', created: 'Jun 1', feeRequired: '$5,000', feePaid: false, txHash: 'â€”', eta: 'â€”' },
+  { id: 'CS-2026-0541', client: 'Priya K.', email: 'pk@fintech.sg', chain: 'SOL', amount: '$48,100', status: 'Funds Located', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'May 28', feeRequired: '$5,000', feePaid: true, txHash: 'bc1qs9qkg8crclk...', eta: 'Release pending' },
+  { id: 'CS-2026-0490', client: 'Ahmed O.', email: 'ao@legal.ae', chain: 'BTC', amount: '$9,340', status: 'Closed', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'May 15', feeRequired: '$5,000', feePaid: true, txHash: '12ab...cdef', eta: 'Closed' },
 ]
 
 const PAYMENTS = [
-  { id: 'INV-2026-0104', client: 'Jane D.', amount: '$3,000.00', currency: 'USD', status: 'Paid', date: 'Aug 1, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0103', client: 'Kwame B.', amount: '$3,000.00', currency: 'USD', status: 'Paid', date: 'Jul 12, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0102', client: 'Jane D.', amount: '$3,000.00', currency: 'USD', status: 'Pending', date: 'Jul 28, 2026', method: 'BTC', tx: '—' },
-  { id: 'INV-2026-0101', client: 'Priya K.', amount: '$3,000.00', currency: 'USD', status: 'Paid', date: 'May 28, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0100', client: 'Natalia R.', amount: '$3,000.00', currency: 'USD', status: 'Paid', date: 'Jun 4, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0099', client: 'Ahmed O.', amount: '$3,000.00', currency: 'USD', status: 'Paid', date: 'May 15, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0104', client: 'Jane D.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'Aug 1, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0103', client: 'Kwame B.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'Jul 12, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0102', client: 'Jane D.', amount: '$5,000.00', currency: 'USD', status: 'Pending', date: 'Jul 28, 2026', method: 'BTC', tx: 'â€”' },
+  { id: 'INV-2026-0101', client: 'Priya K.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'May 28, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0100', client: 'Natalia R.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'Jun 4, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0099', client: 'Ahmed O.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'May 15, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
 ]
 
 const AUDIT = [
-  { action: 'Admin login', user: 'admin@bitcointrace.io', role: 'Super Admin', time: 'Just now', ip: '192.168.1.1', device: 'Chrome · Windows' },
-  { action: 'Case CS-2026-0891 status updated → Funds Located', user: 'marcus.t', role: 'Investigator', time: '2h ago', ip: '10.0.0.12', device: 'Safari · macOS' },
-  { action: 'Report generated — CS-2026-0620', user: 'sara.l', role: 'Investigator', time: '5h ago', ip: '10.0.0.14', device: 'Chrome · Windows' },
-  { action: 'Invoice INV-2026-0104 verified on-chain', user: 'finance@', role: 'Finance', time: '1d ago', ip: '192.168.1.1', device: 'Chrome · Windows' },
-  { action: 'New case CS-2026-0588 assigned', user: 'admin@', role: 'Super Admin', time: '2d ago', ip: '192.168.1.1', device: 'Chrome · Windows' },
+  { action: 'Admin login', user: 'admin@bitcointrace.io', role: 'Super Admin', time: 'Just now', ip: '192.168.1.1', device: 'Chrome Â· Windows' },
+  { action: 'Case CS-2026-0891 status updated â†’ Funds Located', user: 'marcus.t', role: 'Investigator', time: '2h ago', ip: '10.0.0.12', device: 'Safari Â· macOS' },
+  { action: 'Report generated â€” CS-2026-0620', user: 'sara.l', role: 'Investigator', time: '5h ago', ip: '10.0.0.14', device: 'Chrome Â· Windows' },
+  { action: 'Invoice INV-2026-0104 verified on-chain', user: 'finance@', role: 'Finance', time: '1d ago', ip: '192.168.1.1', device: 'Chrome Â· Windows' },
+  { action: 'New case CS-2026-0588 assigned', user: 'admin@', role: 'Super Admin', time: '2d ago', ip: '192.168.1.1', device: 'Chrome Â· Windows' },
   { action: 'Company wallet payment monitor enabled', user: 'system', role: 'System', time: '2d ago', ip: '10.0.0.1', device: 'Daemon' },
 ]
 
 const NOTIFICATIONS = [
-  { type: 'New case submitted', detail: 'CS-2026-0588 — Thomas M.', time: '2h ago', color: '#0057ff' },
-  { type: 'Client uploaded evidence', detail: 'Jane D. — Police_Report_Hack.pdf', time: '3h ago', color: '#f7931a' },
-  { type: 'Payment received', detail: 'INV-2026-0104 — $3,000', time: '5h ago', color: '#00875a' },
-  { type: 'Investigation assigned', detail: 'CS-2026-0588 → Marcus T.', time: '1d ago', color: '#b45309' },
-  { type: 'Client sent message', detail: 'CS-2026-0891 — Jane D.', time: '1d ago', color: '#0057ff' },
-  { type: 'Investigation completed', detail: 'CS-2026-0620 — Report ready', time: '2d ago', color: '#00875a' },
+  { type: 'New case submitted', detail: 'CS-2026-0588 â€” Thomas M.', time: '2h ago', color: '#0057ff' },
+  { type: 'Client uploaded evidence', detail: 'Jane D. â€” Police_Report_Hack.pdf', time: '3h ago', color: '#f7931a' },
+  { type: 'Payment received', detail: 'INV-2026-0104 â€” $5,000', time: '5h ago', color: '#00875a' },
+  { type: 'Investigation assigned', detail: 'CS-2026-0588 â†’ Marcus T.', time: '1d ago', color: '#b45309' },
+  { type: 'Client sent message', detail: 'CS-2026-0891 â€” Jane D.', time: '1d ago', color: '#0057ff' },
+  { type: 'Investigation completed', detail: 'CS-2026-0620 â€” Report ready', time: '2d ago', color: '#00875a' },
 ]
 
 const ANALYTICS = {
@@ -78,7 +79,7 @@ const ANALYSIS_SAMPLE = {
   ],
 }
 
-type AdminTab = 'overview' | 'cases' | 'payments' | 'receipts' | 'analysis' | 'analytics' | 'notifications' | 'audit'
+type AdminTab = 'overview' | 'cases' | 'payments' | 'receipts' | 'analysis' | 'analytics' | 'notifications' | 'audit' | 'clients'
 
 interface Props { onBack: () => void }
 
@@ -88,6 +89,7 @@ export default function AdminPanel({ onBack }: Props) {
   const [chainFilter, setChainFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
   const [receipts, setReceipts] = useState(() => getReceipts())
+  const clients = getClientSignIns()
 
   const filteredCases = CASES.filter(c =>
     (c.id.includes(search) || c.client.toLowerCase().includes(search.toLowerCase()) || c.status.toLowerCase().includes(search.toLowerCase())) &&
@@ -111,6 +113,7 @@ export default function AdminPanel({ onBack }: Props) {
     { id: 'analytics', label: 'Analytics', icon: PieChart },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'audit', label: 'Security & Audit', icon: Lock },
+    { id: 'clients', label: 'Client Sign-ins', icon: Users },
   ]
 
   return (
@@ -178,14 +181,15 @@ export default function AdminPanel({ onBack }: Props) {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: 'Total Cases', value: '37', icon: FileText, color: 'text-[#0057ff]', bg: 'bg-[#e8f0ff]' },
-                    { label: 'Open Cases', value: '21', icon: Activity, color: 'text-[#b45309]', bg: 'bg-[#fef3c7]' },
-                    { label: 'Closed Cases', value: '16', icon: Check, color: 'text-[#00875a]', bg: 'bg-[#e3f5ee]' },
-                    { label: 'Pending Reviews', value: '5', icon: Clock, color: 'text-[#6b7280]', bg: 'bg-[#f1f3f7]' },
-                    { label: 'Payments Received', value: '$54,000', icon: DollarSign, color: 'text-[#00875a]', bg: 'bg-[#e3f5ee]' },
-                    { label: 'Outstanding Invoices', value: '3', icon: AlertTriangle, color: 'text-[#b45309]', bg: 'bg-[#fef3c7]' },
-                    { label: 'Revenue MTD', value: '$21,000', icon: TrendingUp, color: 'text-[#f7931a]', bg: 'bg-[#fff8f0]' },
-                    { label: 'Avg Case Duration', value: '3.2d', icon: Timer, color: 'text-[#0057ff]', bg: 'bg-[#e8f0ff]' },
+                    { label: 'Total Cases', value: '37', sub: '', icon: FileText, color: 'text-[#0057ff]', bg: 'bg-[#e8f0ff]' },
+                    { label: 'Open Cases', value: '21', sub: '', icon: Activity, color: 'text-[#b45309]', bg: 'bg-[#fef3c7]' },
+                    { label: 'Closed Cases', value: '16', sub: '', icon: Check, color: 'text-[#00875a]', bg: 'bg-[#e3f5ee]' },
+                    { label: 'Pending Reviews', value: '5', sub: '', icon: Clock, color: 'text-[#6b7280]', bg: 'bg-[#f1f3f7]' },
+                    { label: 'Payments Received', value: '$54,000', sub: '', icon: DollarSign, color: 'text-[#00875a]', bg: 'bg-[#e3f5ee]' },
+                    { label: 'Outstanding Invoices', value: '3', sub: '', icon: AlertTriangle, color: 'text-[#b45309]', bg: 'bg-[#fef3c7]' },
+                    { label: 'Revenue MTD', value: '$21,000', sub: '', icon: TrendingUp, color: 'text-[#f7931a]', bg: 'bg-[#fff8f0]' },
+                    { label: 'Avg Case Duration', value: '3.2d', sub: '', icon: Timer, color: 'text-[#0057ff]', bg: 'bg-[#e8f0ff]' },
+                    { label: 'Recovered Assets', value: '$200,000', sub: 'Jenny Li', icon: Wallet, color: 'text-[#00875a]', bg: 'bg-[#e3f5ee]' },
                   ].map(s => (
                     <div key={s.label} className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                       <div className={`w-9 h-9 ${s.bg} rounded-lg flex items-center justify-center mb-3`}>
@@ -193,6 +197,7 @@ export default function AdminPanel({ onBack }: Props) {
                       </div>
                       <p className="font-heading font-700 text-2xl">{s.value}</p>
                       <p className="text-xs text-[#6b7280] mt-0.5">{s.label}</p>
+                      {s.sub && <p className="font-mono text-[10px] text-[#8b92a5] mt-0.5">{s.sub}</p>}
                     </div>
                   ))}
                 </div>
@@ -298,7 +303,7 @@ export default function AdminPanel({ onBack }: Props) {
                             <td className="px-4 py-3.5 text-xs text-[#3d4452]">
                               {c.investigator === 'Unassigned'
                                 ? <select className="border border-[#e2e6ed] rounded px-2 py-1 text-xs bg-white">
-                                    <option>Assign…</option><option>Marcus T.</option><option>Sara L.</option><option>Kwame A.</option>
+                                    <option>Assignâ€¦</option><option>Marcus T.</option><option>Sara L.</option><option>Kwame A.</option>
                                   </select>
                                 : c.investigator}
                             </td>
@@ -324,14 +329,14 @@ export default function AdminPanel({ onBack }: Props) {
 
                 {/* Internal notes */}
                 <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
-                  <p className="font-medium text-sm mb-3 flex items-center gap-2"><FileText size={14} className="text-[#0057ff]" /> Internal Notes — CS-2026-0891</p>
+                  <p className="font-medium text-sm mb-3 flex items-center gap-2"><FileText size={14} className="text-[#0057ff]" /> Internal Notes â€” CS-2026-0891</p>
                   <div className="space-y-2">
                     {[
                       { user: 'Marcus T.', time: '2h ago', note: 'UTXO trace confirms 0.84 BTC at exchange cluster. Subpoena package drafted.' },
                       { user: 'admin@', time: '1d ago', note: 'Client verified. Fee invoice INV-2026-0102 issued.' },
                     ].map((n, i) => (
                       <div key={i} className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-lg px-4 py-3">
-                        <p className="font-mono text-[10px] text-[#6b7280] mb-1">{n.user} · {n.time}</p>
+                        <p className="font-mono text-[10px] text-[#6b7280] mb-1">{n.user} Â· {n.time}</p>
                         <p className="text-sm text-[#3d4452]">{n.note}</p>
                       </div>
                     ))}
@@ -450,7 +455,7 @@ export default function AdminPanel({ onBack }: Props) {
                         <div className="px-5 py-4 border-b border-[#e2e6ed] flex items-center justify-between">
                           <div>
                             <p className="font-mono text-xs text-[#0057ff]">{r.id}</p>
-                            <p className="font-mono text-[10px] text-[#6b7280]">{r.caseId} · {r.clientName}</p>
+                            <p className="font-mono text-[10px] text-[#6b7280]">{r.caseId} Â· {r.clientName}</p>
                           </div>
                           <span className={`font-mono text-[10px] px-2.5 py-1 rounded-full ${
                             r.verified ? 'bg-[#e3f5ee] text-[#00875a]' : 'bg-[#fef3c7] text-[#b45309]'
@@ -505,7 +510,7 @@ export default function AdminPanel({ onBack }: Props) {
 
                 <div className="bg-white border border-[#e2e6ed] rounded-xl overflow-hidden">
                   <div className="px-5 py-4 border-b border-[#e2e6ed] flex items-center justify-between">
-                    <p className="font-medium text-sm">Wallet Analysis — Sample Address</p>
+                    <p className="font-medium text-sm">Wallet Analysis â€” Sample Address</p>
                     <span className="font-mono text-[10px] text-[#6b7280]">{ANALYSIS_SAMPLE.network}</span>
                   </div>
                   <div className="grid md:grid-cols-3 gap-px bg-[#e2e6ed]">
@@ -544,10 +549,10 @@ export default function AdminPanel({ onBack }: Props) {
                     <span className="font-mono text-[10px] text-[#6b7280]">4 hops traced</span>
                   </div>
                   {[
-                    { t: 'Jul 28, 2026', d: '0.84 BTC → Unknown Mixer', type: 'out' },
-                    { t: 'Jul 27, 2026', d: '0.84 BTC → Exchange Deposit', type: 'out' },
-                    { t: 'Jul 26, 2026', d: '0.84 BTC → Your Wallet', type: 'in' },
-                    { t: 'Jul 25, 2026', d: '0.0021 BTC → Network Fee', type: 'in' },
+                    { t: 'Jul 28, 2026', d: '0.84 BTC â†’ Unknown Mixer', type: 'out' },
+                    { t: 'Jul 27, 2026', d: '0.84 BTC â†’ Exchange Deposit', type: 'out' },
+                    { t: 'Jul 26, 2026', d: '0.84 BTC â†’ Your Wallet', type: 'in' },
+                    { t: 'Jul 25, 2026', d: '0.0021 BTC â†’ Network Fee', type: 'in' },
                   ].map((tx, i) => (
                     <div key={i} className="flex items-center gap-4 px-5 py-3.5 border-b border-[#e2e6ed] last:border-0">
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center ${tx.type === 'in' ? 'bg-[#e3f5ee] text-[#00875a]' : 'bg-[#fef2f2] text-[#dc2626]'}`}>
@@ -570,7 +575,7 @@ export default function AdminPanel({ onBack }: Props) {
                   {/* Cases per month */}
                   <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                     <p className="font-medium text-sm mb-1">Cases per Month</p>
-                    <p className="font-mono text-[10px] text-[#6b7280] mb-4">FEB — AUG 2026</p>
+                    <p className="font-mono text-[10px] text-[#6b7280] mb-4">FEB â€” AUG 2026</p>
                     <div className="flex items-end gap-2 h-32">
                       {ANALYTICS.casesPerMonth.map((d, i) => (
                         <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -600,7 +605,7 @@ export default function AdminPanel({ onBack }: Props) {
                   {/* Revenue trend */}
                   <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                     <p className="font-medium text-sm mb-1">Revenue Trend ($K)</p>
-                    <p className="font-mono text-[10px] text-[#6b7280] mb-4">FEB — AUG 2026</p>
+                    <p className="font-mono text-[10px] text-[#6b7280] mb-4">FEB â€” AUG 2026</p>
                     <div className="flex items-end gap-2 h-32">
                       {ANALYTICS.revenue.map((d, i) => (
                         <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -680,7 +685,7 @@ export default function AdminPanel({ onBack }: Props) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium">{a.action}</p>
-                          <p className="font-mono text-xs text-[#6b7280]">{a.user} · {a.role} · {a.device}</p>
+                          <p className="font-mono text-xs text-[#6b7280]">{a.user} Â· {a.role} Â· {a.device}</p>
                         </div>
                         <span className="font-mono text-xs text-[#6b7280] whitespace-nowrap">{a.ip}</span>
                         <span className="font-mono text-xs text-[#6b7280] whitespace-nowrap">{a.time}</span>
@@ -693,9 +698,9 @@ export default function AdminPanel({ onBack }: Props) {
                   <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                     <p className="font-medium text-sm mb-4 flex items-center gap-2"><Fingerprint size={14} className="text-[#0057ff]" /> Login History</p>
                     {[
-                      { d: 'Aug 6, 2026 · 09:41', ip: '192.168.1.1', ok: true },
-                      { d: 'Aug 5, 2026 · 18:02', ip: '192.168.1.1', ok: true },
-                      { d: 'Aug 4, 2026 · 22:17', ip: '10.0.0.3', ok: false },
+                      { d: 'Aug 6, 2026 Â· 09:41', ip: '192.168.1.1', ok: true },
+                      { d: 'Aug 5, 2026 Â· 18:02', ip: '192.168.1.1', ok: true },
+                      { d: 'Aug 4, 2026 Â· 22:17', ip: '10.0.0.3', ok: false },
                     ].map((l, i) => (
                       <div key={i} className="flex items-center justify-between py-2 border-b border-[#e2e6ed] last:border-0">
                         <span className="font-mono text-xs text-[#3d4452]">{l.d}</span>
@@ -721,6 +726,50 @@ export default function AdminPanel({ onBack }: Props) {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Client Sign-ins */}
+            {tab === 'clients' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-lg">Client Sign-ins</h2>
+                    <p className="text-sm text-[#3d4452]">Emails of everyone who signed in to the client portal.</p>
+                  </div>
+                  <span className="font-mono text-xs bg-[#0057ff]/10 text-[#0057ff] px-2.5 py-1 rounded-full">{clients.length} client{clients.length === 1 ? '' : 's'}</span>
+                </div>
+
+                <div className="bg-white border border-[#e2e6ed] rounded-xl overflow-hidden">
+                  {clients.length === 0 ? (
+                    <div className="p-12 text-center">
+                      <div className="w-14 h-14 rounded-full bg-[#e8f0ff] flex items-center justify-center mx-auto mb-4">
+                        <Users size={22} className="text-[#0057ff]" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-1">No client sign-ins yet</h3>
+                      <p className="text-sm text-[#3d4452] max-w-sm mx-auto">When a client signs in to the portal, their email is recorded here.</p>
+                    </div>
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#e2e6ed] bg-[#f8f9fb]">
+                          {['Client', 'Email', 'Last Sign-in'].map(h => (
+                            <th key={h} className="px-5 py-3 text-left font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {clients.map(c => (
+                          <tr key={c.email} className="border-b border-[#e2e6ed] last:border-0 hover:bg-[#f8f9fb] transition-colors">
+                            <td className="px-5 py-3.5 font-medium">{c.name}</td>
+                            <td className="px-5 py-3.5 font-mono text-xs text-[#0057ff]">{c.email}</td>
+                            <td className="px-5 py-3.5 font-mono text-xs text-[#6b7280]">{c.lastSignIn}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             )}
