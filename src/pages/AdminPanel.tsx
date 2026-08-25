@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowLeft, Users, FileText, DollarSign, Activity,
   AlertTriangle, Check, Clock, Search, Download, Eye, Lock,
@@ -8,42 +8,43 @@ import {
 } from 'lucide-react'
 import { LOGO_URL } from '../lib/branding'
 import { getReceipts, setReceiptVerified, deleteReceipt } from '../lib/receipts'
-import { getClientSignIns } from '../lib/storage'
+import { getClientSignIns, getLoginLogs, type LoginLogEntry } from '../lib/storage'
+import { subscribeLiveClients, type LiveClient } from '../lib/presence'
 
 const CASES = [
-  { id: 'CS-2026-0891', client: 'Jane D.', email: 'jane.d@email.com', chain: 'BTC', amount: '$52,140', status: 'Funds Located', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jul 28', feeRequired: '$5,000', feePaid: false, txHash: 'â€”', eta: 'Awaiting fee' },
-  { id: 'CS-2026-0744', client: 'Kwame B.', email: 'kb@example.com', chain: 'ARB', amount: '$11,200', status: 'Investigation', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'Jul 12', feeRequired: '$5,000', feePaid: false, txHash: 'â€”', eta: 'Under review' },
-  { id: 'CS-2026-0620', client: 'Natalia R.', email: 'nr@corp.io', chain: 'ETH', amount: '$6,400', status: 'Report Ready', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jun 4', feeRequired: '$5,000', feePaid: true, txHash: '3a9f8c1...b2c1', eta: 'Closed' },
-  { id: 'CS-2026-0588', client: 'Thomas M.', email: 'tm@gmail.com', chain: 'BTC', amount: '$312,592', status: 'Pending Review', investigator: 'Unassigned', paid: false, plan: 'Recovery', created: 'Jun 1', feeRequired: '$5,000', feePaid: false, txHash: 'â€”', eta: 'â€”' },
-  { id: 'CS-2026-0541', client: 'Priya K.', email: 'pk@fintech.sg', chain: 'SOL', amount: '$48,100', status: 'Funds Located', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'May 28', feeRequired: '$5,000', feePaid: true, txHash: 'bc1qs9qkg8crclk...', eta: 'Release pending' },
-  { id: 'CS-2026-0490', client: 'Ahmed O.', email: 'ao@legal.ae', chain: 'BTC', amount: '$9,340', status: 'Closed', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'May 15', feeRequired: '$5,000', feePaid: true, txHash: '12ab...cdef', eta: 'Closed' },
+  { id: 'CS-2026-0891', client: 'Jane D.', email: 'jane.d@email.com', chain: 'BTC', amount: '$52,140', status: 'Funds Located', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jul 28', feeRequired: '$1,000', feePaid: false, txHash: '—', eta: 'Awaiting fee' },
+  { id: 'CS-2026-0744', client: 'Kwame B.', email: 'kb@example.com', chain: 'ARB', amount: '$11,200', status: 'Investigation', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'Jul 12', feeRequired: '$1,000', feePaid: false, txHash: '—', eta: 'Under review' },
+  { id: 'CS-2026-0620', client: 'Natalia R.', email: 'nr@corp.io', chain: 'ETH', amount: '$6,400', status: 'Report Ready', investigator: 'Marcus T.', paid: true, plan: 'Recovery', created: 'Jun 4', feeRequired: '$1,000', feePaid: true, txHash: '3a9f8c1...b2c1', eta: 'Closed' },
+  { id: 'CS-2026-0588', client: 'Thomas M.', email: 'tm@gmail.com', chain: 'BTC', amount: '$312,592', status: 'Pending Review', investigator: 'Unassigned', paid: false, plan: 'Recovery', created: 'Jun 1', feeRequired: '$1,000', feePaid: false, txHash: '—', eta: '—' },
+  { id: 'CS-2026-0541', client: 'Priya K.', email: 'pk@fintech.sg', chain: 'SOL', amount: '$48,100', status: 'Funds Located', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'May 28', feeRequired: '$1,000', feePaid: true, txHash: 'bc1qs9qkg8crclk...', eta: 'Release pending' },
+  { id: 'CS-2026-0490', client: 'Ahmed O.', email: 'ao@legal.ae', chain: 'BTC', amount: '$9,340', status: 'Closed', investigator: 'Sara L.', paid: true, plan: 'Recovery', created: 'May 15', feeRequired: '$1,000', feePaid: true, txHash: '12ab...cdef', eta: 'Closed' },
 ]
 
 const PAYMENTS = [
-  { id: 'INV-2026-0104', client: 'Jane D.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'Aug 1, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0103', client: 'Kwame B.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'Jul 12, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0102', client: 'Jane D.', amount: '$5,000.00', currency: 'USD', status: 'Pending', date: 'Jul 28, 2026', method: 'BTC', tx: 'â€”' },
-  { id: 'INV-2026-0101', client: 'Priya K.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'May 28, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0100', client: 'Natalia R.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'Jun 4, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
-  { id: 'INV-2026-0099', client: 'Ahmed O.', amount: '$5,000.00', currency: 'USD', status: 'Paid', date: 'May 15, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0104', client: 'Jane D.', amount: '$1,000.00', currency: 'USD', status: 'Paid', date: 'Aug 1, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0103', client: 'Kwame B.', amount: '$1,000.00', currency: 'USD', status: 'Paid', date: 'Jul 12, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0102', client: 'Jane D.', amount: '$1,000.00', currency: 'USD', status: 'Pending', date: 'Jul 28, 2026', method: 'BTC', tx: '—' },
+  { id: 'INV-2026-0101', client: 'Priya K.', amount: '$1,000.00', currency: 'USD', status: 'Paid', date: 'May 28, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0100', client: 'Natalia R.', amount: '$1,000.00', currency: 'USD', status: 'Paid', date: 'Jun 4, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
+  { id: 'INV-2026-0099', client: 'Ahmed O.', amount: '$1,000.00', currency: 'USD', status: 'Paid', date: 'May 15, 2026', method: 'BTC', tx: 'bc1qs9qkg8crclk...' },
 ]
 
 const AUDIT = [
-  { action: 'Admin login', user: 'admin@bitcointrace.io', role: 'Super Admin', time: 'Just now', ip: '192.168.1.1', device: 'Chrome Â· Windows' },
-  { action: 'Case CS-2026-0891 status updated â†’ Funds Located', user: 'marcus.t', role: 'Investigator', time: '2h ago', ip: '10.0.0.12', device: 'Safari Â· macOS' },
-  { action: 'Report generated â€” CS-2026-0620', user: 'sara.l', role: 'Investigator', time: '5h ago', ip: '10.0.0.14', device: 'Chrome Â· Windows' },
-  { action: 'Invoice INV-2026-0104 verified on-chain', user: 'finance@', role: 'Finance', time: '1d ago', ip: '192.168.1.1', device: 'Chrome Â· Windows' },
-  { action: 'New case CS-2026-0588 assigned', user: 'admin@', role: 'Super Admin', time: '2d ago', ip: '192.168.1.1', device: 'Chrome Â· Windows' },
+  { action: 'Admin login', user: 'admin@bitcointrace.io', role: 'Super Admin', time: 'Just now', ip: '192.168.1.1', device: 'Chrome · Windows' },
+  { action: 'Case CS-2026-0891 status updated → Funds Located', user: 'marcus.t', role: 'Investigator', time: '2h ago', ip: '10.0.0.12', device: 'Safari · macOS' },
+  { action: 'Report generated — CS-2026-0620', user: 'sara.l', role: 'Investigator', time: '5h ago', ip: '10.0.0.14', device: 'Chrome · Windows' },
+  { action: 'Invoice INV-2026-0104 verified on-chain', user: 'finance@', role: 'Finance', time: '1d ago', ip: '192.168.1.1', device: 'Chrome · Windows' },
+  { action: 'New case CS-2026-0588 assigned', user: 'admin@', role: 'Super Admin', time: '2d ago', ip: '192.168.1.1', device: 'Chrome · Windows' },
   { action: 'Company wallet payment monitor enabled', user: 'system', role: 'System', time: '2d ago', ip: '10.0.0.1', device: 'Daemon' },
 ]
 
 const NOTIFICATIONS = [
-  { type: 'New case submitted', detail: 'CS-2026-0588 â€” Thomas M.', time: '2h ago', color: '#0057ff' },
-  { type: 'Client uploaded evidence', detail: 'Jane D. â€” Police_Report_Hack.pdf', time: '3h ago', color: '#f7931a' },
-  { type: 'Payment received', detail: 'INV-2026-0104 â€” $5,000', time: '5h ago', color: '#00875a' },
-  { type: 'Investigation assigned', detail: 'CS-2026-0588 â†’ Marcus T.', time: '1d ago', color: '#b45309' },
-  { type: 'Client sent message', detail: 'CS-2026-0891 â€” Jane D.', time: '1d ago', color: '#0057ff' },
-  { type: 'Investigation completed', detail: 'CS-2026-0620 â€” Report ready', time: '2d ago', color: '#00875a' },
+  { type: 'New case submitted', detail: 'CS-2026-0588 — Thomas M.', time: '2h ago', color: '#0057ff' },
+  { type: 'Client uploaded evidence', detail: 'Jane D. — Police_Report_Hack.pdf', time: '3h ago', color: '#f7931a' },
+  { type: 'Payment received', detail: 'INV-2026-0104 — $1,000', time: '5h ago', color: '#00875a' },
+  { type: 'Investigation assigned', detail: 'CS-2026-0588 → Marcus T.', time: '1d ago', color: '#b45309' },
+  { type: 'Client sent message', detail: 'CS-2026-0891 — Jane D.', time: '1d ago', color: '#0057ff' },
+  { type: 'Investigation completed', detail: 'CS-2026-0620 — Report ready', time: '2d ago', color: '#00875a' },
 ]
 
 const ANALYTICS = {
@@ -89,7 +90,29 @@ export default function AdminPanel({ onBack }: Props) {
   const [chainFilter, setChainFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
   const [receipts, setReceipts] = useState(() => getReceipts())
-  const clients = getClientSignIns()
+  const [clients, setClients] = useState<LiveClient[]>([])
+  const [loginLogs, setLoginLogs] = useState<LoginLogEntry[]>([])
+
+  useEffect(() => {
+    // Load local receipts
+    setReceipts(getReceipts())
+    // Load local login logs
+    setLoginLogs(getLoginLogs())
+
+    return subscribeLiveClients(live => {
+      const stored = getClientSignIns()
+      const byEmail = new Map(live.map(c => [c.email.toLowerCase(), c]))
+      const merged: LiveClient[] = stored.map(s => {
+        const hit = byEmail.get(s.email.toLowerCase())
+        return hit ? { ...s, ...hit } : { ...s, online: false }
+      })
+      for (const c of live) {
+        if (!merged.some(m => m.email.toLowerCase() === c.email.toLowerCase())) merged.unshift(c)
+      }
+      merged.sort((a, b) => Number(b.online) - Number(a.online))
+      setClients(merged)
+    })
+  }, [])
 
   const filteredCases = CASES.filter(c =>
     (c.id.includes(search) || c.client.toLowerCase().includes(search.toLowerCase()) || c.status.toLowerCase().includes(search.toLowerCase())) &&
@@ -113,7 +136,7 @@ export default function AdminPanel({ onBack }: Props) {
     { id: 'analytics', label: 'Analytics', icon: PieChart },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'audit', label: 'Security & Audit', icon: Lock },
-    { id: 'clients', label: 'Client Sign-ins', icon: Users },
+    { id: 'clients', label: 'Live Clients', icon: Users },
   ]
 
   return (
@@ -697,17 +720,36 @@ export default function AdminPanel({ onBack }: Props) {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                     <p className="font-medium text-sm mb-4 flex items-center gap-2"><Fingerprint size={14} className="text-[#0057ff]" /> Login History</p>
-                    {[
-                      { d: 'Aug 6, 2026 Â· 09:41', ip: '192.168.1.1', ok: true },
-                      { d: 'Aug 5, 2026 Â· 18:02', ip: '192.168.1.1', ok: true },
-                      { d: 'Aug 4, 2026 Â· 22:17', ip: '10.0.0.3', ok: false },
-                    ].map((l, i) => (
-                      <div key={i} className="flex items-center justify-between py-2 border-b border-[#e2e6ed] last:border-0">
-                        <span className="font-mono text-xs text-[#3d4452]">{l.d}</span>
-                        <span className="font-mono text-xs text-[#6b7280]">{l.ip}</span>
-                        <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full ${l.ok ? 'bg-[#e3f5ee] text-[#00875a]' : 'bg-[#fef2f2] text-[#dc2626]'}`}>{l.ok ? 'Authorized' : 'Blocked'}</span>
-                      </div>
-                    ))}
+                    {loginLogs.length > 0 ? (
+                      loginLogs.map((l) => (
+                        <div key={l.id} className="flex flex-col py-2 border-b border-[#e2e6ed] last:border-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-xs text-[#3d4452]">{l.name || l.email}</span>
+                            <span className="font-mono text-xs text-[#6b7280]">
+                              {new Date(l.login_time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="font-mono text-[10px] text-[#6b7280] truncate max-w-[200px]" title={l.device_info}>{l.device_info}</span>
+                            <span className="font-mono text-xs text-[#6b7280]">{l.ip_address}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        {[
+                          { d: 'Aug 6, 2026 · 09:41', ip: '192.168.1.1', ok: true },
+                          { d: 'Aug 5, 2026 · 18:02', ip: '192.168.1.1', ok: true },
+                          { d: 'Aug 4, 2026 · 22:17', ip: '10.0.0.3', ok: false },
+                        ].map((l, i) => (
+                          <div key={i} className="flex items-center justify-between py-2 border-b border-[#e2e6ed] last:border-0">
+                            <span className="font-mono text-xs text-[#3d4452]">{l.d}</span>
+                            <span className="font-mono text-xs text-[#6b7280]">{l.ip}</span>
+                            <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full ${l.ok ? 'bg-[#e3f5ee] text-[#00875a]' : 'bg-[#fef2f2] text-[#dc2626]'}`}>{l.ok ? 'Authorized' : 'Blocked'}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
                   </div>
                   <div className="bg-white border border-[#e2e6ed] rounded-xl p-5">
                     <p className="font-medium text-sm mb-4 flex items-center gap-2"><KeyRound size={14} className="text-[#0057ff]" /> Security Controls</p>
@@ -735,10 +777,13 @@ export default function AdminPanel({ onBack }: Props) {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-semibold text-lg">Client Sign-ins</h2>
-                    <p className="text-sm text-[#3d4452]">Emails of everyone who signed in to the client portal.</p>
+                    <h2 className="font-semibold text-lg">Live Clients</h2>
+                    <p className="text-sm text-[#3d4452]">Who signed in and who is on the app right now.</p>
                   </div>
-                  <span className="font-mono text-xs bg-[#0057ff]/10 text-[#0057ff] px-2.5 py-1 rounded-full">{clients.length} client{clients.length === 1 ? '' : 's'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs bg-[#e3f5ee] text-[#00875a] px-2.5 py-1 rounded-full">{clients.filter(c => c.online).length} online</span>
+                    <span className="font-mono text-xs bg-[#0057ff]/10 text-[#0057ff] px-2.5 py-1 rounded-full">{clients.length} signed in</span>
+                  </div>
                 </div>
 
                 <div className="bg-white border border-[#e2e6ed] rounded-xl overflow-hidden">
@@ -747,14 +792,14 @@ export default function AdminPanel({ onBack }: Props) {
                       <div className="w-14 h-14 rounded-full bg-[#e8f0ff] flex items-center justify-center mx-auto mb-4">
                         <Users size={22} className="text-[#0057ff]" />
                       </div>
-                      <h3 className="font-semibold text-lg mb-1">No client sign-ins yet</h3>
-                      <p className="text-sm text-[#3d4452] max-w-sm mx-auto">When a client signs in to the portal, their email is recorded here.</p>
+                      <h3 className="font-semibold text-lg mb-1">No clients on the app yet</h3>
+                      <p className="text-sm text-[#3d4452] max-w-sm mx-auto">When a client signs in, they show up here. Online means they are currently in the app.</p>
                     </div>
                   ) : (
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[#e2e6ed] bg-[#f8f9fb]">
-                          {['Client', 'Email', 'Last Sign-in'].map(h => (
+                          {['Status', 'Client', 'Email', 'Last Sign-in'].map(h => (
                             <th key={h} className="px-5 py-3 text-left font-mono text-[10px] text-[#6b7280] uppercase tracking-widest">{h}</th>
                           ))}
                         </tr>
@@ -762,6 +807,12 @@ export default function AdminPanel({ onBack }: Props) {
                       <tbody>
                         {clients.map(c => (
                           <tr key={c.email} className="border-b border-[#e2e6ed] last:border-0 hover:bg-[#f8f9fb] transition-colors">
+                            <td className="px-5 py-3.5">
+                              <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] px-2 py-0.5 rounded-full ${c.online ? 'bg-[#e3f5ee] text-[#00875a]' : 'bg-[#f1f3f7] text-[#6b7280]'}`}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${c.online ? 'bg-[#00875a]' : 'bg-[#9ca3af]'}`} />
+                                {c.online ? 'On app' : 'Offline'}
+                              </span>
+                            </td>
                             <td className="px-5 py-3.5 font-medium">{c.name}</td>
                             <td className="px-5 py-3.5 font-mono text-xs text-[#0057ff]">{c.email}</td>
                             <td className="px-5 py-3.5 font-mono text-xs text-[#6b7280]">{c.lastSignIn}</td>
