@@ -1,1 +1,2 @@
-export const LOGO_URL = `${import.meta.env.BASE_URL}logo.jpg`
+import logo from '../assets/logo.jpg'
+export const LOGO_URL = logo
