@@ -73,7 +73,7 @@ const TESTIMONIALS = [
 const PRICING = [
   {
     tier: 'Standard',
-    price: '$1,499',
+    price: '$1000',
     per: 'per investigation',
     desc: 'Single-incident Bitcoin theft or fraud — up to 10 wallet hops, one exchange attribution, PDF forensic report.',
     features: [
@@ -90,7 +90,7 @@ const PRICING = [
   },
   {
     tier: 'Advanced',
-    price: '$5,000',
+    price: '$1000',
     per: 'per investigation',
     desc: 'Complex cases — unlimited hops, mixer analysis, cross-chain extension, court-ready report with expert declaration.',
     features: [
