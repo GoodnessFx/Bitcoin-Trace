@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Loader, Mail, Lock, User, Eye, EyeOff, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react'
 import { LOGO_URL } from '../lib/branding'
-import { supabase, hasSupabaseConfig } from '../lib/supabase'
-import { signIn, signUp } from '../lib/auth'
+import { signIn, signUp, signInWithGoogle } from '../lib/auth'
+import { initGoogleAuth, renderGoogleButton, promptGoogleOneTap, hasGoogleClientId } from '../lib/google'
 
 function GoogleG({ size = 18 }: { size?: number }) {
   return (
@@ -32,6 +32,41 @@ export default function AuthPage({ initialMode = 'signin', onBack, onSuccess }: 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
+
+  const googleBtnRef = useRef<HTMLDivElement>(null)
+  const [googleReady, setGoogleReady] = useState(false)
+  const googleRendered = useRef(false)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!hasGoogleClientId() || googleRendered.current) return
+
+    initGoogleAuth(profile => {
+      const { user } = signInWithGoogle(profile.name, profile.email, profile.picture)
+      if (user) {
+        setSuccessMsg('Signed in with Google! Redirecting…')
+        onSuccess?.()
+      }
+    }).then(ok => {
+      if (cancelled) return
+      setGoogleReady(ok)
+      if (ok && googleBtnRef.current && !googleRendered.current) {
+        googleRendered.current = true
+        renderGoogleButton(googleBtnRef.current, profile => {
+          const { user } = signInWithGoogle(profile.name, profile.email, profile.picture)
+          if (user) {
+            setSuccessMsg('Signed in with Google! Redirecting…')
+            onSuccess?.()
+          }
+        })
+        promptGoogleOneTap()
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [onSuccess])
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,42 +126,9 @@ export default function AuthPage({ initialMode = 'signin', onBack, onSuccess }: 
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    setBusy(true)
-    setError('')
-    setSuccessMsg('')
-
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-    if (!supabaseUrl || !hasSupabaseConfig()) {
-      setBusy(false)
-      setError('Google Sign-In service is not configured. Please sign in or create an account with email below.')
-      return
-    }
-
-    try {
-      // Pre-flight check to verify domain DNS resolution and avoid browser NXDOMAIN crash
-      const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), 2000)
-      await fetch(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/health`, {
-        method: 'GET',
-        mode: 'no-cors',
-        signal: controller.signal,
-      })
-      clearTimeout(timer)
-
-      const { error: suError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin },
-      })
-      if (suError) {
-        setBusy(false)
-        setError(suError.message)
-      }
-    } catch {
-      setBusy(false)
-      setError(
-        'The Google OAuth server is currently unreachable. Please sign in or create your account using email and password below.'
-      )
+  const handleFallbackGoogleClick = () => {
+    if (!promptGoogleOneTap()) {
+      setError('Please use the Google Sign-in button below, or sign in with your email and password.')
     }
   }
 
@@ -197,16 +199,21 @@ export default function AuthPage({ initialMode = 'signin', onBack, onSuccess }: 
             </p>
           </div>
 
-          {/* Google Button */}
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={busy}
-            className="w-full flex items-center justify-center gap-3 border border-[#e2e6ed] rounded-xl py-2.5 px-4 hover:bg-[#f8f9fb] transition-colors text-xs font-medium text-[#1f2937] disabled:opacity-60 mb-5"
-          >
-            <GoogleG size={17} />
-            <span>Continue with Google</span>
-          </button>
+          {/* Google Button via Google Identity Services (GIS) */}
+          <div className="mb-5">
+            <div ref={googleBtnRef} className="w-full flex justify-center min-h-[42px]" />
+            {!googleReady && (
+              <button
+                type="button"
+                onClick={handleFallbackGoogleClick}
+                disabled={busy}
+                className="w-full flex items-center justify-center gap-3 border border-[#e2e6ed] rounded-xl py-2.5 px-4 hover:bg-[#f8f9fb] transition-colors text-xs font-medium text-[#1f2937] disabled:opacity-60"
+              >
+                <GoogleG size={17} />
+                <span>Continue with Google</span>
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-[#e5e7eb]" />

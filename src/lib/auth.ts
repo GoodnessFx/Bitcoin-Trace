@@ -268,6 +268,44 @@ export async function signIn(
   return { error: 'No account found with this email. Please create an account or verify your credentials.' }
 }
 
+export function signInWithGoogle(name: string, email: string, picture?: string): { user: AuthUser } {
+  const users = loadUsers()
+  const normalized = email.trim().toLowerCase()
+  let found = users.find(u => u.email.toLowerCase() === normalized)
+
+  if (!found) {
+    found = {
+      id: `usr_${Math.random().toString(36).substr(2, 9)}_${Date.now().toString(36)}`,
+      name: name.trim() || 'Google User',
+      email: normalized,
+      provider: 'google',
+      initials: initialsOf(name.trim() || 'Google User'),
+      joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      picture,
+    }
+    users.push(found)
+    saveUsers(users)
+  } else {
+    found.provider = 'google'
+    if (picture) found.picture = picture
+    saveUsers(users)
+  }
+
+  const publicUser: AuthUser = {
+    id: found.id,
+    name: found.name,
+    email: found.email,
+    provider: 'google',
+    initials: found.initials,
+    joined: found.joined,
+    picture: found.picture,
+  }
+
+  setSession(publicUser, true)
+  void recordLogin(publicUser)
+  return { user: publicUser }
+}
+
 export async function signOut(): Promise<void> {
   localStorage.removeItem(SESSION_KEY)
   sessionStorage.removeItem(SESSION_KEY)
