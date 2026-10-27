@@ -14,6 +14,7 @@ const PENDING_SCAN_KEY = 'bt_pending_scan'
 export default function App() {
   const { user, loading } = useAuth()
   const [page, setPage] = useState<Page>('landing')
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
   const [adminAuthed, setAdminAuthed] = useState(false)
   const [scanAddress, setScanAddress] = useState('')
 
@@ -38,7 +39,7 @@ export default function App() {
 
   const navigate = (p: Page) => {
     if (p === 'admin' && !adminAuthed) { setPage('admin-login'); return }
-    if (p === 'dashboard' && !user) { setPage('auth'); return }
+    if (p === 'dashboard' && !user) { setAuthMode('signin'); setPage('auth'); return }
     if (p === 'dashboard' && user) { setPage('dashboard'); return }
     setPage(p)
   }
@@ -47,6 +48,12 @@ export default function App() {
     setScanAddress(addr)
     if (user) { setPage('dashboard'); return }
     sessionStorage.setItem(PENDING_SCAN_KEY, addr)
+    setAuthMode('signup')
+    setPage('auth')
+  }
+
+  const handleOpenAuth = (mode: 'signin' | 'signup' = 'signin') => {
+    setAuthMode(mode)
     setPage('auth')
   }
 
@@ -68,7 +75,18 @@ export default function App() {
   }
 
   if (page === 'auth') return (
-    <AuthPage onBack={() => setPage('landing')} />
+    <AuthPage
+      initialMode={authMode}
+      onBack={() => setPage('landing')}
+      onSuccess={() => {
+        const pending = sessionStorage.getItem(PENDING_SCAN_KEY)
+        if (pending) {
+          setScanAddress(pending)
+          sessionStorage.removeItem(PENDING_SCAN_KEY)
+        }
+        setPage('dashboard')
+      }}
+    />
   )
   if (page === 'admin-login') return (
     <AdminLogin onAuth={() => { setAdminAuthed(true); setPage('admin') }} onBack={() => setPage('landing')} />
@@ -79,5 +97,5 @@ export default function App() {
   if (page === 'dashboard' && user) return (
     <Dashboard onBack={() => setPage('landing')} navigate={navigate} initialAddress={scanAddress} user={user} onSignOut={handleSignOut} />
   )
-  return <Landing navigate={navigate} onScan={startScan} user={user} onSignIn={() => setPage('auth')} onSignOut={handleSignOut} />
+  return <Landing navigate={navigate} onScan={startScan} user={user} onSignIn={handleOpenAuth} onSignOut={handleSignOut} />
 }

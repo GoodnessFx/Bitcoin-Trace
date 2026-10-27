@@ -235,7 +235,7 @@ interface Props {
   navigate: (p: Page) => void
   onScan: (addr: string) => void
   user: AuthUser | null
-  onSignIn: () => void
+  onSignIn: (mode?: 'signin' | 'signup') => void
   onSignOut: () => void
 }
 
@@ -319,11 +319,11 @@ export default function Landing({ navigate, onScan, user, onSignIn, onSignOut }:
               </>
             ) : (
               <>
-                <button onClick={onSignIn}
+                <button onClick={() => onSignIn('signin')}
                   className="font-body text-[13px] text-[#5a6174] hover:text-[#0a0c10] px-3 py-1.5 transition-colors">
                   Sign In
                 </button>
-                <button onClick={onSignIn}
+                <button onClick={() => onSignIn('signup')}
                   className="font-body text-[13px] text-[#0a0c10] border border-[#0a0c10]/15 px-3 py-1.5 rounded transition-all hover:border-[#0a0c10]">
                   Create Account
                 </button>
